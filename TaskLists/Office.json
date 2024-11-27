@@ -1,0 +1,80 @@
+[
+  {
+    "id": 1,
+    "name": "Dépoussiérer le bureau",
+    "description": "Enlever la poussière sur le bureau et ses accessoires.",
+    "time": "15 minutes",
+    "equipment": "Bureau",
+    "frequency": "Hebdomadaire",
+    "what": ["Chiffon", "Poussière"],
+    "isDone": false,
+    "dateDone": "",
+    "room": "office",
+    "isGlobal": true
+  },
+  {
+    "id": 2,
+    "name": "Passer l'aspirateur",
+    "description": "Passer l'aspirateur sous et autour du bureau.",
+    "time": "10 minutes",
+    "equipment": "Aspirateur",
+    "frequency": "Mensuelle",
+    "what": ["Aspirateur"],
+    "isDone": false,
+    "dateDone": "",
+    "room": "office",
+    "isGlobal": true
+  },
+  {
+    "id": 3,
+    "name": "Organiser les papiers",
+    "description": "Trier, classer et ranger les papiers sur le bureau.",
+    "time": "30 minutes",
+    "equipment": "Bureau",
+    "frequency": "Mensuelle",
+    "what": ["Dossiers", "Classeurs", "Étiquettes"],
+    "isDone": false,
+    "dateDone": "",
+    "room": "office",
+    "isGlobal": true
+  },
+  {
+    "id": 4,
+    "name": "Vider la poubelle du bureau",
+    "description": "Vider la poubelle du bureau et remplacer le sac poubelle.",
+    "time": "5 minutes",
+    "equipment": "Poubelle",
+    "frequency": "Quotidienne",
+    "what": ["Sac poubelle"],
+    "isDone": false,
+    "dateDone": "",
+    "room": "office",
+    "isGlobal": true
+  },
+  {
+    "id": 5,
+    "name": "Nettoyer l'ordinateur",
+    "description": "Essuyer l'écran, le clavier et la souris de l'ordinateur.",
+    "time": "10 minutes",
+    "equipment": "Ordinateur",
+    "frequency": "Mensuelle",
+    "what": ["Chiffon microfibre", "Produit nettoyant pour électronique"],
+    "isDone": false,
+    "dateDone": "",
+    "room": "office",
+    "isGlobal": true
+  },
+  {
+    "id": 6,
+    "name": "Organiser les câbles",
+    "description": "Ranger et organiser les câbles électriques et de l'ordinateur.",
+    "time": "15 minutes",
+    "equipment": "Câbles",
+    "frequency": "Mensuelle",
+    "what": ["Attaches pour câbles", "Boîte de rangement"],
+    "isDone": false,
+    "dateDone": "",
+    "room": "office",
+    "isGlobal": true
+  }
+]
