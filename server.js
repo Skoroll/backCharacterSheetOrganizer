@@ -4,6 +4,7 @@ const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const userRoutes = require('./routes/userRoutes');
 const taskRoutes = require('./routes/taskRoutes');
+const achievementsRoutes = require('./routes/achievementsRoutes');
 const cron = require('node-cron');
 const Task = require('./models/taskModel');
 const cors = require('cors');
@@ -35,6 +36,7 @@ app.use(express.json());
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
+app.use('/api/achievements', achievementsRoutes);
 
 // Fonction pour calculer la prochaine date d'exécution selon la fréquence
 const calculateNextDueDate = (frequency) => {
@@ -84,3 +86,7 @@ const PORT = process.env.PORT || 5000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
+
+

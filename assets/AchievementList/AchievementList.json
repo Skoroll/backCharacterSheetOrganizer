@@ -1,0 +1,60 @@
+
+[
+    {
+      "id": 1,
+      "icon":"fa-solid fa-broom",
+      "name": "Bon début",
+      "content": "Finir une tâche",
+      "isGlobal": true
+    },
+    {
+        "id": 2,
+        "icon":"fa-solid fa-broom",
+        "name": "Et d'une",
+        "content": "Première pièce complétée totalement",
+        "isGlobal": true
+      },
+      {
+        "id": 3,
+        "icon":"fa-solid fa-kitchen-set",
+        "name": "J'ai faim !",
+        "content": "Première tâche concernant la cuisine terminée",
+        "isGlobal": true
+      },
+      {
+        "id": 4,
+        "icon":"fa-solid fa-kitchen-set",
+        "name": "Qu'est-ce qu'on mange ?",
+        "content": "Terminer toutes les tâches de la cuisine",
+        "isGlobal": true
+      },
+      {
+        "id": 5,
+        "icon": "fa-solid fa-bed",
+        "name": "Quand on fait son lit ...",
+        "content": "Première tâche d'une chambre faite",
+        "isGlobal": true
+      },
+      {
+        "id": 6,
+        "icon": "fa-solid fa-bed",
+        "name": "... on se couche",
+        "content": "Toute la liste de tâche de la chambre faite",
+        "isGlobal": true
+      },
+      {
+        "id": 7,
+        "icon":"fa-solid fa-sun",
+        "name": "Lève tôt",
+        "content": "Une tâche terminée avant 9h du matin",
+        "isGlobal": true
+      },
+      {
+        "id": 8,
+        "icon":"fa-solid fa-moon",
+        "name": "Couche tard",
+        "content": "Tâche validée après 22h",
+        "isGlobal": true
+      }
+  ]
+  

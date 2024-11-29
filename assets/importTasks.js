@@ -1,7 +1,7 @@
 const mongoose = require('mongoose');
-const User = require('./models/userModel'); // Charger le modèle utilisateur
-const Task = require('./models/taskModel');  // Charger le modèle Task
-require('dotenv').config();
+const User = require('../models/userModel'); // Charger le modèle utilisateur
+const Task = require('../models/taskModel');  // Charger le modèle Task
+require('dotenv').config({path: '../.env'});
 
 // Importer les fichiers JSON
 const Kitchen = require('./TaskLists/Kitchen.json');
@@ -88,10 +88,10 @@ const getOrCreateAdminUser = async () => {
 
     // Insérer les tâches dans la base de données MongoDB
     await Task.insertMany(allTasks);
-    console.log('Data imported!');
+    console.log('Listes importée');
     process.exit();
   } catch (err) {
-    console.error('Error importing data:', err);
+    console.error("Erreur lors de l'importation des listes:", err);
     process.exit(1);
   }
 };

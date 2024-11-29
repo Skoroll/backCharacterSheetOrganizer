@@ -105,7 +105,7 @@ exports.login = async (req, res) => {
     res.status(200).json({
       message: 'Connexion réussie',
       token,
-      user: { id: user._id, email: user.email, name: user.name },
+      user: { id: user._id, email: user.email, name: user.name,  profileImage: user.profileImage  },
     });
   } catch (err) {
     console.error('Erreur dans la connexion :', err);
