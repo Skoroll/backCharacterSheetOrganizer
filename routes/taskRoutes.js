@@ -1,7 +1,7 @@
 //routes/taskRoutes.js
 const express = require('express');
 const { protect } = require('../middlewares/authMiddleware');
-const Task = require('../models/taskModel');
+const Task = require('../models/userMadeTaskModel');
 const router = express.Router();
 
 // Créer une nouvelle tâche
@@ -30,7 +30,7 @@ router.post('/', protect, async (req, res) => {
 });
 
 // Valider une tâche (marquer comme terminée)
-router.put('/:taskId/done', protect, async (req, res) => {
+router.put('/:taskId/done', protect, async (req, res) => {  
   try {
     const task = await Task.findById(req.params.taskId);
     if (!task) {
@@ -51,6 +51,7 @@ router.put('/:taskId/done', protect, async (req, res) => {
 
 // Route pour récupérer toutes les tâches (publiques + privées)
 router.get("/", protect, async (req, res) => {
+  console.log("/");
   try {
     const userId = req.user._id; // Utiliser l'utilisateur authentifié
     const tasks = await Task.find({
@@ -68,6 +69,7 @@ router.get("/", protect, async (req, res) => {
 
 // Route pour récupérer toutes les tâches globales (publiques)
 router.get("/global", async (req, res) => {
+  console.log("global");
   try {
     const tasks = await Task.find({ isGlobal: true }); // Récupérer toutes les tâches globales
     res.status(200).json(tasks);
@@ -79,11 +81,12 @@ router.get("/global", async (req, res) => {
 
 // Route pour récupérer les tâches par pièce pour un utilisateur spécifique
 router.get("/by-room", protect, async (req, res) => {
+  console.log("by-room route hit");
   try {
     const userId = req.user._id; // Utiliser l'utilisateur authentifié
     const rooms = req.query.rooms.split(","); // Récupérer les pièces via les paramètres de requête
 
-    // Trouver les tâches en fonction des pièces spécifiées
+    // Trouver les tâches en fonction des pièces spécifiées et de l'utilisateur
     const tasks = await Task.find({
       $or: [
         { user: userId, room: { $in: rooms } }, // Tâches privées liées à l'utilisateur et filtrées par pièce
@@ -91,12 +94,15 @@ router.get("/by-room", protect, async (req, res) => {
       ]
     });
 
+    console.log("Tasks found:", tasks); // Log des tâches récupérées
+
     res.status(200).json(tasks);
   } catch (error) {
     console.error("Erreur lors de la récupération des tâches par pièce :", error);
     res.status(500).json({ message: "Erreur lors de la récupération des tâches par pièce." });
   }
 });
+
 
 // Fonction pour calculer la prochaine date d'exécution selon la fréquence
 const calculateNextDueDate = (frequency) => {
@@ -142,6 +148,8 @@ router.patch('/:id', async (req, res) => {
 
 // Route pour récupérer uniquement les tâches terminées par pièce
 router.get("/completed", protect, async (req, res) => {
+  console.log("completed");
+
   try {
     const userId = req.user._id; // Utiliser l'utilisateur authentifié
     const rooms = req.query.rooms.split(","); // Récupérer les pièces via les paramètres de requête

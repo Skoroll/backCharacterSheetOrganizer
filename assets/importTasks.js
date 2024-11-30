@@ -69,32 +69,32 @@ const getOrCreateAdminUser = async () => {
   
   
   // Fonction d'importation des données
-  const importData = async () => {
-    const adminUser = await getOrCreateAdminUser(); // Récupérer l'ID de l'administrateur
-    
-    try {
-      const allTasks = [
-      ...Kitchen.map(task => ({ ...task, room: 'Cuisine', user: adminUser._id })),
-      ...LivingRoom.map(task => ({ ...task, room: 'Salon', user: adminUser._id })),
-      ...BathRoom.map(task => ({ ...task, room: 'Salle de bain', user: adminUser._id })),
-      ...BedRoom.map(task => ({ ...task, room: 'Chambre', user: adminUser._id })),
-      ...Cellar.map(task => ({ ...task, room: 'Cellier', user: adminUser._id })),
-      ...Clearance.map(task => ({ ...task, room: 'Débarras', user: adminUser._id })),
-      ...DiningRoom.map(task => ({ ...task, room: 'Salle à manger', user: adminUser._id })),
-      ...Entrance.map(task => ({ ...task, room: 'Entrée', user: adminUser._id })),
-      ...Office.map(task => ({ ...task, room: 'Bureau', user: adminUser._id })),
-      ...Toilets.map(task => ({ ...task, room: 'Toilettes', user: adminUser._id })),
-    ];
+ 
 
-    // Insérer les tâches dans la base de données MongoDB
-    await Task.insertMany(allTasks);
-    console.log('Listes importée');
-    process.exit();
-  } catch (err) {
-    console.error("Erreur lors de l'importation des listes:", err);
-    process.exit(1);
-  }
-};
+  const importData = async () => {
+      try {
+          const allTasks = [
+              ...Kitchen.map(task => ({ ...task, room: 'Cuisine' })),
+              ...LivingRoom.map(task => ({ ...task, room: 'Salon' })),
+              ...BathRoom.map(task => ({ ...task, room: 'Salle de bain' })),
+              ...BedRoom.map(task => ({ ...task, room: 'Chambre' })),
+              ...Cellar.map(task => ({ ...task, room: 'Cellier' })),
+              ...Clearance.map(task => ({ ...task, room: 'Débarras' })),
+              ...DiningRoom.map(task => ({ ...task, room: 'Salle à manger' })),
+              ...Entrance.map(task => ({ ...task, room: 'Entrée' })),
+              ...Office.map(task => ({ ...task, room: 'Bureau' })),
+              ...Toilets.map(task => ({ ...task, room: 'Toilettes' })),
+          ];
+  
+          await Task.insertMany(allTasks);
+          console.log('Tâches globales importées');
+          process.exit();
+      } catch (err) {
+          console.error("Erreur lors de l'importation des tâches globales:", err);
+          process.exit(1);
+      }
+  };
+  
 
 // Connexion à MongoDB et lancement de l'importation
 connectDB().then(importData);

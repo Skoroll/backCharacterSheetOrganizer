@@ -1,7 +1,9 @@
+//userController.js
 const User = require('../models/userModel');
-const Task = require('../models/taskModel');
+const Task = require('../models/taskModel'); // Modèle pour les tâches globales
+const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle pour les tâches utilisateurs
 const jwt = require('jsonwebtoken');
-const bcrypt = require('bcryptjs'); // bcryptjs pour la gestion du mot de passe
+
 
 // Fonction pour l'inscription d'un utilisateur
 exports.register = async (req, res) => {
@@ -21,7 +23,7 @@ exports.register = async (req, res) => {
       return res.status(400).json({ message: "Cet email est déjà utilisé." });
     }
 
-    // Création de l'utilisateur sans avoir besoin de hacher le mot de passe ici
+    // Création de l'utilisateur
     const user = new User({
       name,
       email,
@@ -34,28 +36,23 @@ exports.register = async (req, res) => {
     await user.save();
     console.log('Utilisateur créé:', user);
 
-    // Dupliquer les tâches globales pour chaque pièce
+    // Dupliquer les tâches globales pour chaque pièce dans UserMadeTask
     const globalTasks = await Task.find({ isGlobal: true }); // Récupérer toutes les tâches globales
 
-    const userTasks = [];
-    globalTasks.forEach(task => {
-      // Pour chaque tâche globale, on la copie et on l'associe à l'utilisateur
-      const newTask = new Task({
-        name: task.name,
-        description: task.description,
-        time: task.time,
-        frequency: task.frequency,
-        what: task.what,
-        room: task.room,
-        isDone: task.isDone,
-        isGlobal: false, // C'est maintenant une tâche spécifique à l'utilisateur, pas globale
-        user: user._id, // Associe l'utilisateur à cette tâche
-      });
-      userTasks.push(newTask);
-    });
+    const userTasks = globalTasks.map(task => ({
+      name: task.name, // Adapte si le champ est différent
+      description: task.description,
+      time: task.time,
+      frequency: task.frequency,
+      what: task.what,
+      room: task.room,
+      isDone: task.isDone,
+      isGlobal: false, // Marquer comme non-global
+      user: user._id, // Associer à l'utilisateur créé
+    }));
 
-    // Sauvegarder toutes les nouvelles tâches pour l'utilisateur
-    await Task.insertMany(userTasks);
+    // Sauvegarder les tâches dans UserMadeTask
+    await UserMadeTask.insertMany(userTasks);
 
     res.status(201).json({ message: "Utilisateur créé avec succès et tâches globales attribuées !" });
   } catch (error) {
@@ -63,9 +60,6 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
-
-
-
 
 
 // Fonction pour la connexion d'un utilisateur
@@ -112,9 +106,6 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: 'Erreur interne du serveur' });
   }
 };
-
-
-
 
 
 // Fonction pour récupérer les informations de l'utilisateur connecté

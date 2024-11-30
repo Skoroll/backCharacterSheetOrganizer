@@ -1,9 +1,9 @@
 // controllers/taskController.js
-const Task = require('../models/taskModel');
+const Task = require('../models/userMadeTaskModel');
 
 
 // Créer une nouvelle tâche
-const createTask = async (req, res) => {
+exports.createTask = async (req, res) => {
   try {
     const { name, description, time, equipment, frequency } = req.body;
     const newTask = new Task({
@@ -22,7 +22,7 @@ const createTask = async (req, res) => {
 };
 
 // Valider une tâche
-const validateTask = async (req, res) => {
+exports.validateTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.taskId);
     if (!task) {
@@ -37,7 +37,7 @@ const validateTask = async (req, res) => {
 };
 
 // Obtenir toutes les tâches d'un utilisateur
-const getUserTasks = async (req, res) => {
+exports.getUserTasks = async (req, res) => {
   try {
     const tasks = await Task.find({ user: req.user._id });
     res.status(200).json(tasks);
@@ -46,5 +46,5 @@ const getUserTasks = async (req, res) => {
   }
 };
 
-module.exports = { createTask, validateTask, getUserTasks };
+
 
