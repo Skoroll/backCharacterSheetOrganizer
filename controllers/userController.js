@@ -133,3 +133,63 @@ exports.getProfile = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
+
+exports.updateUser = async (req, res) => {
+  console.log("Requête de mise à jour de profil :",  req.user)
+  try {
+    const userId = req.user.id; // Identifiant de l'utilisateur connecté (authMiddleware requis)
+    const { name, email, rooms, equipments } = req.body;
+
+    // Préparer les mises à jour
+    const updates = {
+      ...(name && { name }),
+      ...(email && { email }),
+      ...(rooms && { rooms: JSON.parse(rooms) }),
+      ...(equipments && { equipments: JSON.parse(equipments) }),
+    };
+
+    if (req.file) {
+      updates.profileImage = req.file.path.replace(/\\/g, '/');
+    }
+
+    const updatedUser = await User.findByIdAndUpdate(
+      userId,
+      updates,
+      { new: true, runValidators: true }
+    ).select('-password'); // Exclure le mot de passe du retour
+
+    if (!updatedUser) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
+    res.status(200).json({
+      message: 'Profil mis à jour avec succès.',
+      user: updatedUser,
+    });
+  } catch (error) {
+    console.error('Erreur lors de la mise à jour :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+
+
+exports.deleteUser = async (req, res) => {
+  console.log("Requête reçue pour suppression d'utilisateur :", req.user);
+
+  try {
+    const userId = req.user.id;
+    const deletedUser = await User.findByIdAndDelete(userId);
+    if (!deletedUser) {
+      console.log("Utilisateur non trouvé :", userId);
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
+    await Task.deleteMany({ user: userId });
+
+    console.log("Utilisateur supprimé avec succès :", userId);
+    res.status(200).json({ message: 'Utilisateur supprimé avec succès.' });
+  } catch (error) {
+    console.error('Erreur lors de la suppression :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
