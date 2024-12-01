@@ -164,23 +164,29 @@ exports.updateUser = async (req, res) => {
 };
 
 
-exports.deleteUser = async (req, res) => {
-  console.log("Requête reçue pour suppression d'utilisateur :", req.user);
 
+
+// Fonction pour supprimer un utilisateur et ses tâches
+exports.deleteUser = async (req, res) => {
   try {
-    const userId = req.user.id;
-    const deletedUser = await User.findByIdAndDelete(userId);
-    if (!deletedUser) {
-      console.log("Utilisateur non trouvé :", userId);
-      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    const userId = req.user.id; // Identifiant de l'utilisateur connecté (authMiddleware requis)
+
+    // Vérifie si l'utilisateur existe
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur introuvable." });
     }
 
-    await Task.deleteMany({ user: userId });
+    // Supprime les tâches associées à l'utilisateur
+    const tasksToDelete = await UserMadeTask.deleteMany({ user: userId });
+    console.log(`Tâches supprimées : ${tasksToDelete.deletedCount}`);
 
-    console.log("Utilisateur supprimé avec succès :", userId);
-    res.status(200).json({ message: 'Utilisateur supprimé avec succès.' });
+    // Supprime l'utilisateur
+    await User.findByIdAndDelete(userId);
+
+    res.status(200).json({ message: "Utilisateur et ses tâches supprimés avec succès." });
   } catch (error) {
-    console.error('Erreur lors de la suppression :', error);
-    res.status(500).json({ message: 'Erreur interne du serveur.' });
+    console.error("Erreur lors de la suppression de l'utilisateur :", error);
+    res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
