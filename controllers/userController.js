@@ -3,6 +3,7 @@ const User = require('../models/userModel');
 const Task = require('../models/taskModel'); // Modèle pour les tâches globales
 const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle pour les tâches utilisateurs
 const jwt = require('jsonwebtoken');
+const bcrypt = require('bcrypt');
 
 
 // Fonction pour l'inscription d'un utilisateur
@@ -124,12 +125,14 @@ exports.getProfile = async (req, res) => {
   }
 };
 
+// Fonction pour la modification du profil
 exports.updateUser = async (req, res) => {
-  console.log("Requête de mise à jour de profil :",  req.user)
-  try {
-    const userId = req.user.id; // Identifiant de l'utilisateur connecté (authMiddleware requis)
-    const { name, email, rooms, equipments } = req.body;
 
+  try {
+    
+    const userId = req.user.id; // Identifiant de l'utilisateur connecté (authMiddleware requis)
+    const { name, email, password, rooms, equipments } = req.body;
+    console.log("Password reçu :", password);
     // Préparer les mises à jour
     const updates = {
       ...(name && { name }),
@@ -137,6 +140,13 @@ exports.updateUser = async (req, res) => {
       ...(rooms && { rooms: JSON.parse(rooms) }),
       ...(equipments && { equipments: JSON.parse(equipments) }),
     };
+
+    if (password) {
+      console.log("Hachage en cours...");
+      const salt = await bcrypt.genSalt(10);
+      updates.password = await bcrypt.hash(password, salt);
+      console.log("Mot de passe haché :", updates.password);
+    }
 
     if (req.file) {
       updates.profileImage = req.file.path.replace(/\\/g, '/');
@@ -156,11 +166,13 @@ exports.updateUser = async (req, res) => {
       message: 'Profil mis à jour avec succès.',
       user: updatedUser,
     });
+    console.log("Mises à jour préparées :", updates);
   } catch (error) {
     console.error('Erreur lors de la mise à jour :', error);
     res.status(500).json({ message: 'Erreur interne du serveur.' });
   }
 };
+
 
 
 // Fonction pour supprimer un utilisateur et ses tâches
