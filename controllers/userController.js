@@ -92,8 +92,7 @@ exports.login = async (req, res) => {
 
     const token = jwt.sign(
       { id: user._id, email: user.email },
-      process.env.JWT_SECRET,
-      { expiresIn: '1h' }
+      process.env.JWT_SECRET
     );
 
     res.status(200).json({
@@ -162,8 +161,6 @@ exports.updateUser = async (req, res) => {
     res.status(500).json({ message: 'Erreur interne du serveur.' });
   }
 };
-
-
 
 
 // Fonction pour supprimer un utilisateur et ses tâches

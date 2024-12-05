@@ -6,19 +6,18 @@ const router = express.Router();
 
 // Créer une nouvelle tâche
 router.post('/', protect, async (req, res) => {
-  const { name, room, description, time, equipment, frequency, nextDue, user, isGlobal } = req.body;
+  const { name, room, description, time, what, frequency } = req.body;
+  console.log('Données reçues :', req.body);  // Afficher les données envoyées
 
   try {
     const newTask = new Task({
       name,
-      room,
       description,
       time,
-      equipment,
       frequency,
-      nextDue,
-      user,
-      isGlobal: isGlobal || false, // Si isGlobal est défini, c'est une tâche publique
+      room,
+      what,  // Assurez-vous que 'what' est un tableau
+      user: req.user._id,
     });
 
     await newTask.save();
@@ -28,6 +27,8 @@ router.post('/', protect, async (req, res) => {
     res.status(500).json({ message: "Erreur lors de la création de la tâche", error });
   }
 });
+
+
 
 // Valider une tâche (marquer comme terminée)
 router.put('/:taskId/done', protect, async (req, res) => {  
@@ -125,7 +126,6 @@ const calculateNextDueDate = (frequency) => {
   }
 };
 
-// Mettre à jour une tâche
 // Route pour mettre à jour une tâche
 router.patch('/:id', async (req, res) => {
   const { id } = req.params;
@@ -169,7 +169,18 @@ router.get("/completed", protect, async (req, res) => {
   }
 });
 
-
+router.delete("/:id", protect, async (req, res) => {
+  try {
+    const task = await Task.findByIdAndDelete(req.params.id);
+    if (!task) {
+      return res.status(404).json({ message: "Tâche introuvable." });
+    }
+    res.status(200).json({ message: "Tâche supprimée avec succès." });
+  } catch (error) {
+    console.error("Erreur lors de la suppression :", error);
+    res.status(500).json({ message: "Erreur serveur." });
+  }
+});
 
 
 module.exports = router;
