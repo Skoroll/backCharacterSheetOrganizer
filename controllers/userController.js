@@ -4,63 +4,45 @@ const Task = require('../models/taskModel'); // Modèle pour les tâches globale
 const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle pour les tâches utilisateurs
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
+const { upload, convertToWebpWithResize } = require('./path/to/upload');
+
 
 
 // Fonction pour l'inscription d'un utilisateur
-exports.register = async (req, res) => {
-  try {
-    const { name, email, password, rooms, equipments } = req.body;
+exports.register = [
+  upload.single('profileImage'), // Middleware pour gérer l'upload
+  convertToWebpWithResize,      // Middleware pour convertir l'image
+  async (req, res) => {
+    try {
+      const { name, email, password, rooms, equipments } = req.body;
 
-    console.log('Données reçues lors de l\'inscription:', { name, email, password, rooms, equipments });
+      if (!name || !email || !password || !rooms) {
+        return res.status(400).json({ message: "Champs requis manquants." });
+      }
 
-    if (!name || !email || !password || !rooms) {
-      return res.status(400).json({ message: "Champs requis manquants." });
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ message: "Cet email est déjà utilisé." });
+      }
+
+      const user = new User({
+        name,
+        email,
+        password,
+        profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null, // Chemin du fichier transformé
+        rooms: JSON.parse(rooms),
+        equipments: JSON.parse(equipments || "[]"),
+      });
+
+      await user.save();
+      res.status(201).json({ message: "Utilisateur créé avec succès !" });
+    } catch (error) {
+      console.error("Erreur lors de l'inscription :", error);
+      res.status(500).json({ message: "Erreur interne du serveur." });
     }
+  },
+];
 
-    // Vérification de l'unicité de l'email
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      console.log('Utilisateur déjà existant avec cet email:', email);
-      return res.status(400).json({ message: "Cet email est déjà utilisé." });
-    }
-
-    // Création de l'utilisateur
-    const user = new User({
-      name,
-      email,
-      password, // Le mot de passe est maintenant en clair, il sera haché dans le modèle
-      profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
-      rooms: JSON.parse(rooms),
-      equipments: JSON.parse(equipments || "[]"),
-    });
-
-    await user.save();
-    console.log('Utilisateur créé:', user);
-
-    // Dupliquer les tâches globales pour chaque pièce dans UserMadeTask
-    const globalTasks = await Task.find({ isGlobal: true }); // Récupérer toutes les tâches globales
-
-    const userTasks = globalTasks.map(task => ({
-      name: task.name, // Adapte si le champ est différent
-      description: task.description,
-      time: task.time,
-      frequency: task.frequency,
-      what: task.what,
-      room: task.room,
-      isDone: task.isDone,
-      isGlobal: false, // Marquer comme non-global
-      user: user._id, // Associer à l'utilisateur créé
-    }));
-
-    // Sauvegarder les tâches dans UserMadeTask
-    await UserMadeTask.insertMany(userTasks);
-
-    res.status(201).json({ message: "Utilisateur créé avec succès et tâches globales attribuées !" });
-  } catch (error) {
-    console.error("Erreur lors de l'inscription :", error);
-    res.status(500).json({ message: "Erreur interne du serveur." });
-  }
-};
 
 
 // Fonction pour la connexion d'un utilisateur
