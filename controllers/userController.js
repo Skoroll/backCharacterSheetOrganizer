@@ -4,7 +4,7 @@ const Task = require('../models/taskModel'); // Modèle pour les tâches globale
 const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle pour les tâches utilisateurs
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { upload, convertToWebpWithResize } = require('./path/to/uploads');
+const { upload, convertToWebpWithResize } = require('../middlewares/uploadMiddleware');
 
 
 
