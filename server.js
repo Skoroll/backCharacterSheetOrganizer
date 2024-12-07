@@ -28,7 +28,12 @@ mongoose
   .catch((err) => console.error('MongoDB connection error:', err));
 
 // Configuration de CORS
-app.use(cors({ origin: 'http://localhost:3000' })); // Autorise uniquement le frontend
+app.use(cors({
+  origin: ['http://localhost:3000', 'https://skoroll.github.io'], // Ajouter les origines autorisées
+  methods: ['GET', 'POST', 'PUT', 'DELETE'], // Méthodes HTTP autorisées
+  credentials: true, // Permet d'envoyer des cookies ou des en-têtes d'authentification
+}));
+
 
 // Middlewares globaux
 app.use(express.json());
