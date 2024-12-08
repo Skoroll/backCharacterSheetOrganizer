@@ -6,7 +6,18 @@ const sharp = require('sharp');
 // Configuration de stockage
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
-    cb(null, 'uploads/'); // Dossier où les fichiers seront enregistrés
+    const uploadDir = path.resolve('uploads'); // Utilise un chemin absolu
+    // Crée le dossier s'il n'existe pas
+    if (!fs.existsSync(uploadDir)) {
+      try {
+        fs.mkdirSync(uploadDir, { recursive: true }); // Crée tous les sous-dossiers nécessaires
+        console.log(`Répertoire créé : ${uploadDir}`);
+      } catch (error) {
+        console.error(`Erreur lors de la création du répertoire : ${uploadDir}`, error);
+        return cb(new Error('Erreur lors de la création du répertoire de stockage'));
+      }
+    }
+    cb(null, uploadDir);
   },
   filename: (req, file, cb) => {
     cb(null, `${Date.now()}-${file.originalname}`);
@@ -33,7 +44,7 @@ const upload = multer({
 const convertToWebpWithResize = async (req, res, next) => {
   if (!req.file) return next(); // Si aucun fichier n'est téléchargé, continuer
 
-  const originalFilePath = path.join('uploads', req.file.filename);
+  const originalFilePath = path.resolve('uploads', req.file.filename);
   const webpFilePath = originalFilePath.replace(path.extname(originalFilePath), '.webp');
 
   try {
@@ -47,8 +58,19 @@ const convertToWebpWithResize = async (req, res, next) => {
       .webp({ quality: 80 }) // Conversion avec une qualité de 80%
       .toFile(webpFilePath);
 
-    // Supprimer le fichier d'origine
-    fs.unlinkSync(originalFilePath);
+    // Vérification de la création du fichier .webp
+    if (fs.existsSync(webpFilePath)) {
+      console.log(`Fichier converti créé à : ${webpFilePath}`);
+    } else {
+      console.log('La conversion a échoué, fichier .webp non trouvé');
+      return next(new Error('La conversion de l\'image en .webp a échoué'));
+    }
+
+    // Supprimer le fichier d'origine si la conversion a réussi
+    if (fs.existsSync(originalFilePath)) {
+      fs.unlinkSync(originalFilePath);
+      console.log('Fichier d\'origine supprimé');
+    }
 
     // Mettre à jour les informations du fichier dans la requête
     req.file.filename = path.basename(webpFilePath);
@@ -56,6 +78,7 @@ const convertToWebpWithResize = async (req, res, next) => {
 
     next();
   } catch (error) {
+    console.error('Erreur lors de la conversion :', error);
     next(error); // Passer l'erreur au middleware de gestion des erreurs
   }
 };
