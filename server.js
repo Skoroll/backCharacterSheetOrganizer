@@ -1,3 +1,4 @@
+// server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
@@ -17,20 +18,25 @@ const app = express();
 // Middleware pour servir les fichiers statiques
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
-// Configuration CORS
+// Connexion à MongoDB
+mongoose
+  .connect(process.env.MONGO_URI, {
+    useNewUrlParser: true,
+    useUnifiedTopology: true,
+  })
+  .then(() => console.log('MongoDB connected'))
+  .catch((err) => console.error('MongoDB connection error:', err));
+
+// Configuration de CORS
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://skoroll.github.io'],
+  origin: [
+    'http://localhost:3000',
+    'https://skoroll.github.io',
+    'https://cleanback.fly.dev', // Ajout de l'origine Fly.io
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
-
-app.set('trust proxy', 1); // Nécessaire pour Fly.io
-
-// Connexion à MongoDB
-mongoose
-  .connect(process.env.MONGO_URI)
-  .then(() => console.log('MongoDB connected'))
-  .catch((err) => console.error('MongoDB connection error:', err));
 
 // Middlewares globaux
 app.use(express.json());
@@ -40,15 +46,37 @@ app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/achievements', achievementsRoutes);
 
-// Vérification des tâches à valider toutes les heures
+// Fonction pour calculer la prochaine date d'exécution selon la fréquence
+const calculateNextDueDate = (frequency) => {
+  const now = new Date();
+  switch (frequency) {
+    case 'daily':
+      return new Date(now.setDate(now.getDate() + 1)); // Exemple pour une tâche quotidienne
+    case 'weekly':
+      return new Date(now.setDate(now.getDate() + 7)); // Exemple pour une tâche hebdomadaire
+    case 'monthly':
+      return new Date(now.setMonth(now.getMonth() + 1)); // Exemple pour une tâche mensuelle
+    default:
+      return now;
+  }
+};
+
+// Vérifier les tâches à valider toutes les heures
 cron.schedule('0 * * * *', async () => {
   try {
     const tasksDue = await Task.find({ nextDue: { $lte: new Date() } });
+    if (tasksDue.length === 0) {
+      console.log('Aucune tâche due à valider');
+    }
     tasksDue.forEach(async (task) => {
-      task.lastCompleted = new Date();
-      task.nextDue = calculateNextDueDate(task.frequency);
-      await task.save();
-      console.log(`Tâche ${task._id} mise à jour`);
+      try {
+        task.lastCompleted = new Date();
+        task.nextDue = calculateNextDueDate(task.frequency);
+        await task.save();
+        console.log(`Tâche ${task._id} mise à jour`);
+      } catch (error) {
+        console.error(`Erreur lors de la mise à jour de la tâche ${task._id}:`, error);
+      }
     });
   } catch (error) {
     console.error('Erreur lors de la récupération des tâches dues:', error);
@@ -62,7 +90,7 @@ app.use((err, req, res, next) => {
 });
 
 // Démarrage du serveur
-const PORT = process.env.PORT || 5000;
+const PORT = 8080;
 app.listen(PORT, '0.0.0.0', () => {
   console.log(`Server running on port ${PORT}`);
 });
