@@ -24,10 +24,10 @@ const userSchema = mongoose.Schema(
       type: [String], // Tableau de chaînes de caractères
       default: [],
     },
-    equipments: {
+    /*equipments: {
       type: [String],
       default: [],
-    },
+    },*/
   },
   {
     timestamps: true, // Ajoute createdAt et updatedAt

@@ -1,55 +1,54 @@
-//userController.js
 const User = require('../models/userModel');
 const Task = require('../models/taskModel'); // Modèle pour les tâches globales
 const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle pour les tâches utilisateurs
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
-const { upload, convertToWebpWithResize } = require('../middlewares/uploadMiddleware');
-
-
+const uploadMiddleware = require('../middlewares/uploadMiddleware');  // Assure-toi que le chemin est correct
+const fs = require('fs');
+const path = require('path');
 
 // Fonction pour l'inscription d'un utilisateur
-exports.register = [
-  upload.single('profileImage'), // Middleware pour gérer l'upload
-  convertToWebpWithResize,      // Middleware pour convertir l'image
-  async (req, res) => {
+exports.register = async (req, res) => {
+  const { name, email, password, rooms } = req.body;
+  const profileImage = req.file ? req.file.path : null; // Vérification de l'image envoyée
+
+  // Si rooms est une chaîne JSON, on peut le parser
+  let parsedRooms = [];
+  if (rooms) {
     try {
-      const { name, email, password, rooms, equipments } = req.body;
-
-      if (!name || !email || !password || !rooms) {
-        return res.status(400).json({ message: "Champs requis manquants." });
-      }
-
-      const existingUser = await User.findOne({ email });
-      if (existingUser) {
-        return res.status(400).json({ message: "Cet email est déjà utilisé." });
-      }
-
-      const user = new User({
-        name,
-        email,
-        password,
-        profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null, // Chemin du fichier transformé
-        rooms: JSON.parse(rooms),
-        equipments: JSON.parse(equipments || "[]"),
-      });
-
-      await user.save();
-      res.status(201).json({ message: "Utilisateur créé avec succès !" });
+      parsedRooms = JSON.parse(rooms);
     } catch (error) {
-      console.error("Erreur lors de l'inscription :", error);
-      res.status(500).json({ message: "Erreur interne du serveur." });
+      console.error("Erreur lors du parsing de rooms:", error);
     }
-  },
-];
+  }
 
+  try {
+    const newUser = await User.create({
+      name,
+      email,
+      password,  // Assure-toi de hasher le mot de passe
+      rooms: parsedRooms,
+      profileImage: req.file.path.replace(/\\/g, '/'),
+
+      
+    });
+
+    res.status(201).json({
+      message: 'Utilisateur créé avec succès',
+      user: newUser,
+    });
+  } catch (err) {
+    console.error('Erreur lors de la création de l\'utilisateur :', err);
+    res.status(500).json({ message: 'Une erreur est survenue lors de la création de l\'utilisateur.' });
+  }
+};
 
 
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  console.log('Données reçues lors de la connexion:', { email, password });
+  console.log("L'utilisateur ", { email }, " se connecte.");
 
   try {
     const user = await User.findOne({ email });
@@ -59,17 +58,12 @@ exports.login = async (req, res) => {
     }
     
     console.log('Utilisateur trouvé:', user);  // Affiche l'utilisateur trouvé
-    console.log('Mot de passe envoyé (en clair):', password);  // Mot de passe envoyé
-    console.log('Mot de passe en base de données:', user.password);  // Mot de passe en clair dans la DB
-
+    
     // Comparaison des mots de passe en utilisant la méthode matchPassword
     const match = await user.matchPassword(password.trim());
 
-    console.log('Mot de passe envoyé:', password);
-    console.log('Mot de passe haché dans la base de données:', user.password);
-    console.log('Match:', match); // Devrait afficher true si tout est bien configuré
-    
     if (!match) {
+      console.log('Mot de passe incorrect');
       return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
     }
 
@@ -81,14 +75,13 @@ exports.login = async (req, res) => {
     res.status(200).json({
       message: 'Connexion réussie',
       token,
-      user: { id: user._id, email: user.email, name: user.name,  profileImage: user.profileImage  },
+      user: { id: user._id, email: user.email, name: user.name, profileImage: user.profileImage },
     });
   } catch (err) {
     console.error('Erreur dans la connexion :', err);
     res.status(500).json({ message: 'Erreur interne du serveur' });
   }
 };
-
 
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {
@@ -109,27 +102,37 @@ exports.getProfile = async (req, res) => {
 
 // Fonction pour la modification du profil
 exports.updateUser = async (req, res) => {
-
   try {
+    const userId = req.user.id;
+    const { name, email, password, rooms } = req.body;
+    console.log("Données reçues:", req.body); // Log pour vérifier les données envoyées
+    console.log("Fichier reçu:", req.file); // Log pour vérifier le fichier reçu
     
-    const userId = req.user.id; // Identifiant de l'utilisateur connecté (authMiddleware requis)
-    const { name, email, password, rooms, equipments } = req.body;
-    console.log("Password reçu :", password);
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
+    // Supprimer l'ancienne image de profil si elle existe et si une nouvelle image est fournie
+    if (req.file && user.profileImage) {
+      const oldImagePath = path.join(__dirname, '..', user.profileImage);
+      if (fs.existsSync(oldImagePath)) {
+        fs.unlinkSync(oldImagePath); // Supprimer l'ancienne image
+      }
+    }
+
     // Préparer les mises à jour
     const updates = {
       ...(name && { name }),
       ...(email && { email }),
       ...(rooms && { rooms: JSON.parse(rooms) }),
-      ...(equipments && { equipments: JSON.parse(equipments) }),
     };
-
+    
     if (password) {
-      console.log("Hachage en cours...");
       const salt = await bcrypt.genSalt(10);
       updates.password = await bcrypt.hash(password, salt);
-      console.log("Mot de passe haché :", updates.password);
     }
-
+    
     if (req.file) {
       updates.profileImage = req.file.path.replace(/\\/g, '/');
     }
@@ -148,13 +151,11 @@ exports.updateUser = async (req, res) => {
       message: 'Profil mis à jour avec succès.',
       user: updatedUser,
     });
-    console.log("Mises à jour préparées :", updates);
   } catch (error) {
     console.error('Erreur lors de la mise à jour :', error);
     res.status(500).json({ message: 'Erreur interne du serveur.' });
   }
 };
-
 
 
 // Fonction pour supprimer un utilisateur et ses tâches
@@ -166,6 +167,14 @@ exports.deleteUser = async (req, res) => {
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: "Utilisateur introuvable." });
+    }
+
+    // Supprimer l'image de profil de l'utilisateur si elle existe
+    if (user.profileImage) {
+      const imagePath = path.join(__dirname, '..', user.profileImage);
+      if (fs.existsSync(imagePath)) {
+        fs.unlinkSync(imagePath); // Supprimer l'image
+      }
     }
 
     // Supprime les tâches associées à l'utilisateur
@@ -181,3 +190,4 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
+

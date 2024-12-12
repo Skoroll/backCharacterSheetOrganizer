@@ -1,4 +1,3 @@
-// server.js
 const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
@@ -9,6 +8,7 @@ const cron = require('node-cron');
 const Task = require('./models/taskModel');
 const cors = require('cors');
 const path = require('path');
+const uploadMiddleware = require('./middlewares/uploadMiddleware'); // Importer le middleware
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -41,53 +41,14 @@ app.use(cors({
 // Middlewares globaux
 app.use(express.json());
 
+// Ajouter la route pour l'upload
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
 // Routes
 app.use('/api/users', userRoutes);
 app.use('/api/tasks', taskRoutes);
 app.use('/api/achievements', achievementsRoutes);
-
-// Fonction pour calculer la prochaine date d'exécution selon la fréquence
-const calculateNextDueDate = (frequency) => {
-  const now = new Date();
-  switch (frequency) {
-    case 'daily':
-      return new Date(now.setDate(now.getDate() + 1)); // Exemple pour une tâche quotidienne
-    case 'weekly':
-      return new Date(now.setDate(now.getDate() + 7)); // Exemple pour une tâche hebdomadaire
-    case 'monthly':
-      return new Date(now.setMonth(now.getMonth() + 1)); // Exemple pour une tâche mensuelle
-    default:
-      return now;
-  }
-};
-
-// Vérifier les tâches à valider toutes les heures
-cron.schedule('0 * * * *', async () => {
-  try {
-    const tasksDue = await Task.find({ nextDue: { $lte: new Date() } });
-    if (tasksDue.length === 0) {
-      console.log('Aucune tâche due à valider');
-    }
-    tasksDue.forEach(async (task) => {
-      try {
-        task.lastCompleted = new Date();
-        task.nextDue = calculateNextDueDate(task.frequency);
-        await task.save();
-        console.log(`Tâche ${task._id} mise à jour`);
-      } catch (error) {
-        console.error(`Erreur lors de la mise à jour de la tâche ${task._id}:`, error);
-      }
-    });
-  } catch (error) {
-    console.error('Erreur lors de la récupération des tâches dues:', error);
-  }
-});
-
-// Gestion des erreurs
-app.use((err, req, res, next) => {
-  console.error('Erreur survenue:', err);
-  res.status(err.status || 500).json({ message: err.message || 'Erreur interne du serveur' });
-});
 
 // Démarrage du serveur
 const PORT = 8080;
