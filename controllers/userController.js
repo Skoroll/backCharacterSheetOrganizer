@@ -8,6 +8,7 @@ const fs = require('fs');
 const path = require('path');
 
 // Fonction pour l'inscription d'un utilisateur
+
 exports.register = async (req, res) => {
   const { name, email, password, rooms } = req.body;
   const profileImage = req.file ? req.file.path : null; // Vérification de l'image envoyée
@@ -23,15 +24,27 @@ exports.register = async (req, res) => {
   }
 
   try {
+    // Créer l'utilisateur
     const newUser = await User.create({
       name,
       email,
       password,  // Assure-toi de hasher le mot de passe
       rooms: parsedRooms,
-      profileImage: req.file.path.replace(/\\/g, '/'),
-
-      
+      profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
     });
+
+    // Récupérer toutes les tâches globales
+    const globalTasks = await Task.find({ isGlobal: true });
+
+    // Créer des UserMadeTask pour chaque tâche globale
+    const userMadeTasks = globalTasks.map(task => ({
+      ...task.toObject(),  // On copie les données de la tâche
+      user: newUser._id,  // On associe l'utilisateur à la tâche
+      isGlobal: false,  // On marque la tâche comme non globale
+    }));
+
+    // Sauvegarder les tâches personnalisées de l'utilisateur
+    await UserMadeTask.insertMany(userMadeTasks);
 
     res.status(201).json({
       message: 'Utilisateur créé avec succès',
