@@ -17,6 +17,7 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Fonction pour l'inscription d'un utilisateur
+// Fonction pour l'inscription d'un utilisateur
 exports.register = async (req, res) => {
   const { name, email, password, rooms } = req.body;
   const profileImage = req.file ? req.file.path : null; // Vérification de l'image envoyée
@@ -41,8 +42,8 @@ exports.register = async (req, res) => {
       profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
     });
 
-    // Créer les tâches associées à l'utilisateur
-    await userService.createUserTasks(newUser._id);
+    // Appel à createUserTasks pour dupliquer les tâches
+    await userService.createUserTasks(newUser._id); // Cette fonction doit gérer la duplication des tâches
 
     res.status(201).json({
       message: 'Utilisateur créé avec succès',
@@ -53,8 +54,6 @@ exports.register = async (req, res) => {
     res.status(500).json({ message: "Une erreur est survenue lors de la création de l'utilisateur." });
   }
 };
-
-
 
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
