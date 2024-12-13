@@ -1,8 +1,3 @@
- fly.toml app configuration file generated for cleanback on 2024-12-05T14:16:09Z
-#
-# See https://fly.io/docs/reference/configuration/ for information about how to use this file.
-#
-
 app = 'cleanback'
 primary_region = 'arn'
 
