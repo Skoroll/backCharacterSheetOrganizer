@@ -12,22 +12,19 @@ WORKDIR /app
 # Set production environment
 ENV NODE_ENV=production
 
-
-# Throw-away build stage to reduce size of final image
+# Install packages needed to build node modules
 FROM base as build
 
-# Install packages needed to build node modules
+# Install packages to build native modules (if needed)
 RUN apt-get update -qq && \
-    apt-get install -y python-is-python3 pkg-config build-essential 
+    apt-get install -y python-is-python3 pkg-config build-essential
 
 # Install node modules
-COPY --link package.json package-lock.json .
+COPY --link package.json package-lock.json ./
 RUN npm install
 
 # Copy application code
-COPY --link . .
-
-
+COPY --link . ./
 
 # Final stage for app image
 FROM base
@@ -35,5 +32,8 @@ FROM base
 # Copy built application
 COPY --from=build /app /app
 
+# Expose port 8080 for the app
+EXPOSE 8080
+
 # Start the server by default, this can be overwritten at runtime
-CMD [ "npm", "run", "start" ]
+CMD ["npm", "run", "start"]
