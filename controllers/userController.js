@@ -6,6 +6,7 @@ const bcrypt = require('bcrypt');
 const uploadMiddleware = require('../middlewares/uploadMiddleware');  // Assure-toi que le chemin est correct
 const fs = require('fs');
 const path = require('path');
+const userService = require('../services/userServices');
 
 // Fonction pour l'inscription d'un utilisateur
 
@@ -28,36 +29,24 @@ exports.register = async (req, res) => {
     const newUser = await User.create({
       name,
       email,
-      password,  // Assure-toi de hasher le mot de passe
+      password, // Assure-toi de hasher le mot de passe
       rooms: parsedRooms,
       profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
     });
 
-    // Récupérer toutes les tâches globales
-    const globalTasks = await Task.find({ isGlobal: true });
-
-    // Créer des UserMadeTask pour chaque tâche globale
-    console.log("Tâches globales récupérées :", globalTasks);
-    const userMadeTasks = globalTasks.map(task => ({
-      ...task.toObject(),
-      user: newUser._id,
-      isGlobal: false,
-    }));
-    console.log("Tâches personnalisées prêtes :", userMadeTasks);
-    await UserMadeTask.insertMany(userMadeTasks);
-    console.log("Tâches personnalisées créées avec succès");
-    
+    // Créer les tâches associées à l'utilisateur
+    await userService.createUserTasks(newUser._id);
 
     res.status(201).json({
       message: 'Utilisateur créé avec succès',
       user: newUser,
     });
   } catch (err) {
-    console.error('Erreur complète lors de la création de l\'utilisateur :', err);
-    res.status(500).json({ message: 'Une erreur est survenue lors de la création de l\'utilisateur.' });
+    console.error("Erreur complète lors de la création de l'utilisateur :", err);
+    res.status(500).json({ message: "Une erreur est survenue lors de la création de l'utilisateur." });
   }
-  
 };
+
 
 
 // Fonction pour la connexion d'un utilisateur
