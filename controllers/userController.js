@@ -17,82 +17,82 @@ if (!fs.existsSync(uploadDir)) {
 }
 
 // Fonction pour l'inscription d'un utilisateur
-// Fonction pour l'inscription d'un utilisateur
 exports.register = async (req, res) => {
   const { name, email, password, rooms } = req.body;
-  const profileImage = req.file ? req.file.path : null; // Vérification de l'image envoyée
+  
+  // Validation des données requises
+  if (!name || !email || !password) {
+    return res.status(400).json({ message: "Les champs 'name', 'email' et 'password' sont obligatoires." });
+  }
 
-  // Si rooms est une chaîne JSON, on peut le parser
   let parsedRooms = [];
   if (rooms) {
     try {
-      parsedRooms = JSON.parse(rooms);
+      parsedRooms = JSON.parse(rooms); // Parse JSON si fourni
     } catch (error) {
-      console.error("Erreur lors du parsing de rooms:", error);
+      return res.status(400).json({ message: "Le champ 'rooms' doit être un JSON valide." });
     }
   }
 
   try {
-    // Créer l'utilisateur
+    const hashedPassword = await bcrypt.hash(password, 10); // Hashage sécurisé du mot de passe
+
     const newUser = await User.create({
       name,
       email,
-      password, // Assure-toi de hasher le mot de passe
+      password: hashedPassword,
       rooms: parsedRooms,
       profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
     });
 
-    // Appel à createUserTasks pour dupliquer les tâches
-    await userService.createUserTasks(newUser._id); // Cette fonction doit gérer la duplication des tâches
+    await userService.createUserTasks(newUser._id); // Duplication des tâches globales pour l'utilisateur
 
     res.status(201).json({
       message: 'Utilisateur créé avec succès',
-      user: newUser,
+      user: { id: newUser._id, name: newUser.name, email: newUser.email },
     });
   } catch (err) {
     console.error("Erreur complète lors de la création de l'utilisateur :", err);
+    if (err.code === 11000) { // Gestion d'un email dupliqué
+      return res.status(409).json({ message: "Un utilisateur avec cet email existe déjà." });
+    }
     res.status(500).json({ message: "Une erreur est survenue lors de la création de l'utilisateur." });
   }
 };
+
 
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
   const { email, password } = req.body;
 
-  console.log("L'utilisateur ", { email }, " se connecte.");
+  if (!email || !password) {
+    return res.status(400).json({ message: "Les champs 'email' et 'password' sont obligatoires." });
+  }
 
   try {
     const user = await User.findOne({ email });
     if (!user) {
-      console.log('Aucun utilisateur trouvé avec cet email:', email);
       return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
     }
-    
-    console.log('Utilisateur trouvé:', user);  // Affiche l'utilisateur trouvé
-    
-    // Comparaison des mots de passe en utilisant la méthode matchPassword
-    const match = await user.matchPassword(password.trim());
 
+    const match = await bcrypt.compare(password.trim(), user.password);
     if (!match) {
-      console.log('Mot de passe incorrect');
       return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
     }
 
-    const token = jwt.sign(
-      { id: user._id, email: user.email },
-      process.env.JWT_SECRET
-    );
+    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     res.status(200).json({
       message: 'Connexion réussie',
       token,
-      user: { id: user._id, email: user.email, name: user.name, profileImage: user.profileImage },
+      user: { id: user._id, name: user.name, email: user.email, profileImage: user.profileImage },
     });
   } catch (err) {
     console.error('Erreur dans la connexion :', err);
-    res.status(500).json({ message: 'Erreur interne du serveur' });
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
   }
 };
+
 
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {

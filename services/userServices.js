@@ -1,22 +1,19 @@
-// userService.js
 const mongoose = require('mongoose');
-const Task = require('../models/taskModel'); // Modèle des tâches globales
-const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle des tâches utilisateur
+const Task = require('../models/taskModel');
+const UserMadeTask = require('../models/userMadeTaskModel');
 
-// Fonction pour dupliquer les tâches pour un utilisateur
 exports.createUserTasks = async (userId) => {
   try {
     // Récupérer toutes les tâches globales
-    const tasks = await Task.find({});
+    const tasks = await Task.find({ isGlobal: true }); // Filtrer uniquement les tâches globales
 
     // Créer des copies de ces tâches pour l'utilisateur avec un nouvel ID
-    const userMadeTasks = tasks.map(task => {
-      return {
-        ...task.toObject(),  // Copie de la tâche sans l'ID original
-        userId: userId, // Ajouter l'ID de l'utilisateur
-        _id: new mongoose.Types.ObjectId(), // Générer un nouvel ID unique pour la tâche
-      };
-    });
+    const userMadeTasks = tasks.map(task => ({
+      ...task.toObject(), // Copie des champs de la tâche
+      user: userId,       // Associer l'utilisateur
+      _id: new mongoose.Types.ObjectId(), // Nouvel ID pour la tâche dupliquée
+      isGlobal: false,    // Ce n'est plus une tâche globale
+    }));
 
     // Insérer ces tâches dans la collection `usermadetasks`
     await UserMadeTask.insertMany(userMadeTasks);
