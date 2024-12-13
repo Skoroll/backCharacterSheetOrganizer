@@ -19,46 +19,35 @@ if (!fs.existsSync(uploadDir)) {
 // Fonction pour l'inscription d'un utilisateur
 exports.register = async (req, res) => {
   const { name, email, password, rooms } = req.body;
-  
-  // Validation des données requises
+
   if (!name || !email || !password) {
     return res.status(400).json({ message: "Les champs 'name', 'email' et 'password' sont obligatoires." });
   }
 
-  let parsedRooms = [];
-  if (rooms) {
-    try {
-      parsedRooms = JSON.parse(rooms); // Parse JSON si fourni
-    } catch (error) {
-      return res.status(400).json({ message: "Le champ 'rooms' doit être un JSON valide." });
-    }
-  }
-
   try {
-    const hashedPassword = await bcrypt.hash(password, 10); // Hashage sécurisé du mot de passe
+    const hashedPassword = await bcrypt.hash(password, 10);
 
     const newUser = await User.create({
       name,
       email,
       password: hashedPassword,
-      rooms: parsedRooms,
+      rooms: rooms ? JSON.parse(rooms) : [],
       profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
     });
 
-    await userService.createUserTasks(newUser._id); // Duplication des tâches globales pour l'utilisateur
-
     res.status(201).json({
-      message: 'Utilisateur créé avec succès',
-      user: { id: newUser._id, name: newUser.name, email: newUser.email },
+      message: "Utilisateur créé avec succès.",
+      user: { id: newUser._id, email: newUser.email, name: newUser.name },
     });
   } catch (err) {
-    console.error("Erreur complète lors de la création de l'utilisateur :", err);
-    if (err.code === 11000) { // Gestion d'un email dupliqué
+    console.error("Erreur lors de la création de l'utilisateur :", err);
+    if (err.code === 11000) {
       return res.status(409).json({ message: "Un utilisateur avec cet email existe déjà." });
     }
-    res.status(500).json({ message: "Une erreur est survenue lors de la création de l'utilisateur." });
+    res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
+
 
 
 // Fonction pour la connexion d'un utilisateur
@@ -75,23 +64,24 @@ exports.login = async (req, res) => {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
     }
 
-    const match = await bcrypt.compare(password.trim(), user.password);
-    if (!match) {
+    const isPasswordValid = await bcrypt.compare(password, user.password);
+    if (!isPasswordValid) {
       return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     res.status(200).json({
-      message: 'Connexion réussie',
+      message: "Connexion réussie.",
       token,
-      user: { id: user._id, name: user.name, email: user.email, profileImage: user.profileImage },
+      user: { id: user._id, name: user.name, email: user.email },
     });
   } catch (err) {
-    console.error('Erreur dans la connexion :', err);
-    res.status(500).json({ message: 'Erreur interne du serveur.' });
+    console.error("Erreur lors de la connexion :", err);
+    res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
+
 
 
 // Fonction pour récupérer les informations de l'utilisateur connecté
