@@ -37,23 +37,26 @@ exports.register = async (req, res) => {
     const globalTasks = await Task.find({ isGlobal: true });
 
     // Créer des UserMadeTask pour chaque tâche globale
+    console.log("Tâches globales récupérées :", globalTasks);
     const userMadeTasks = globalTasks.map(task => ({
-      ...task.toObject(),  // On copie les données de la tâche
-      user: newUser._id,  // On associe l'utilisateur à la tâche
-      isGlobal: false,  // On marque la tâche comme non globale
+      ...task.toObject(),
+      user: newUser._id,
+      isGlobal: false,
     }));
-
-    // Sauvegarder les tâches personnalisées de l'utilisateur
+    console.log("Tâches personnalisées prêtes :", userMadeTasks);
     await UserMadeTask.insertMany(userMadeTasks);
+    console.log("Tâches personnalisées créées avec succès");
+    
 
     res.status(201).json({
       message: 'Utilisateur créé avec succès',
       user: newUser,
     });
   } catch (err) {
-    console.error('Erreur lors de la création de l\'utilisateur :', err);
+    console.error('Erreur complète lors de la création de l\'utilisateur :', err);
     res.status(500).json({ message: 'Une erreur est survenue lors de la création de l\'utilisateur.' });
   }
+  
 };
 
 
