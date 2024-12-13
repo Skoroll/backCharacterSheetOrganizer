@@ -8,8 +8,15 @@ const fs = require('fs');
 const path = require('path');
 const userService = require('../services/userServices');
 
-// Fonction pour l'inscription d'un utilisateur
 
+// Vérifier et créer le répertoire `uploads` si nécessaire
+const uploadDir = path.join(__dirname, '..', 'uploads');
+
+if (!fs.existsSync(uploadDir)) {
+  fs.mkdirSync(uploadDir, { recursive: true });
+}
+
+// Fonction pour l'inscription d'un utilisateur
 exports.register = async (req, res) => {
   const { name, email, password, rooms } = req.body;
   const profileImage = req.file ? req.file.path : null; // Vérification de l'image envoyée
