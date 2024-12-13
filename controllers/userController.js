@@ -52,35 +52,41 @@ exports.register = async (req, res) => {
 
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
+  console.log("Données reçues pour la connexion :", req.body); // Ajoutez un log ici
   const { email, password } = req.body;
 
   if (!email || !password) {
+    console.log("Champs manquants : email ou mot de passe");
     return res.status(400).json({ message: "Les champs 'email' et 'password' sont obligatoires." });
   }
 
   try {
     const user = await User.findOne({ email });
+    console.log("Utilisateur trouvé :", user); // Vérifiez si un utilisateur est trouvé
     if (!user) {
-      return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
+      console.log("Aucun utilisateur trouvé avec cet email");
+      return res.status(401).json({ message: "Email ou mot de passe incorrect." });
     }
 
-    const isPasswordValid = await bcrypt.compare(password, user.password);
-    if (!isPasswordValid) {
-      return res.status(401).json({ message: 'Email ou mot de passe incorrect.' });
+    const match = await bcrypt.compare(password.trim(), user.password);
+    console.log("Mot de passe correspond :", match); // Vérifiez le résultat de la comparaison
+    if (!match) {
+      return res.status(401).json({ message: "Email ou mot de passe incorrect." });
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
 
     res.status(200).json({
-      message: "Connexion réussie.",
+      message: 'Connexion réussie',
       token,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, profileImage: user.profileImage },
     });
   } catch (err) {
     console.error("Erreur lors de la connexion :", err);
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
+
 
 
 
