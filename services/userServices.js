@@ -1,5 +1,5 @@
 // userService.js
-
+const mongoose = require('mongoose');
 const Task = require('../models/taskModel'); // Modèle des tâches globales
 const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle des tâches utilisateur
 
