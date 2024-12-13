@@ -35,6 +35,23 @@ exports.register = async (req, res) => {
       profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
     });
 
+    // Récupérer les tâches globales
+    const globalTasks = await Task.find();
+    
+    // Dupliquer les tâches globales pour le nouvel utilisateur
+    const userTasks = globalTasks.map(task => ({
+      name: task.name,
+      description: task.description,
+      time: task.time,
+      what: task.what,
+      frequency: task.frequency,
+      room: task.room,
+      user: newUser._id, // Associe au nouvel utilisateur
+    }));
+
+    // Insérer les tâches utilisateur dans la collection UserMadeTask
+    await UserMadeTask.insertMany(userTasks);
+
     res.status(201).json({
       message: "Utilisateur créé avec succès.",
       user: { id: newUser._id, email: newUser.email, name: newUser.name },
