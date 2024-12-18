@@ -116,7 +116,7 @@ const calculateNextDueDate = (frequency) => {
       return new Date(now.setDate(now.getDate() + 7)); 
     case 'Mensuelle':
       return new Date(now.setMonth(now.getMonth() + 1)); 
-    case 'Après chaque utilisation':
+    case 'Quotidienne':
       return now;  
     case 'Trimestrielle':
       return new Date(now.setMonth(now.getMonth() + 3)); 

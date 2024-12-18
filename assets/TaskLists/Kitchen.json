@@ -57,7 +57,7 @@
     "description": "Laver les parties amovibles du blender et nettoyer la base.",
     "time": "10 minutes",
     "equipment": "Blender",
-    "frequency": "Après chaque utilisation",
+    "frequency": "Quotidienne",
     "what": ["Éponge", "Liquide vaisselle"],
     "isDone": false,
     "dateDone": "",
