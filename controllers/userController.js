@@ -46,7 +46,8 @@ exports.register = async (req, res) => {
       what: task.what,
       frequency: task.frequency,
       room: task.room,
-      user: newUser._id, // Associe au nouvel utilisateur
+      dateDone: task.dateDone || null, // Assure la présence du champ
+      user: newUser._id,
     }));
 
     // Insérer les tâches utilisateur dans la collection UserMadeTask

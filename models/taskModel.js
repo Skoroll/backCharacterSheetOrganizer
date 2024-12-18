@@ -7,7 +7,7 @@ const taskSchema = new mongoose.Schema({
   frequency: { type: String, required: true },
   what: [String],
   isDone: { type: Boolean, default: false },
-  dateDone: { type: Date },
+  dateDone: { type: Date, default: null },
   room: { type: String, required: true },
   isGlobal: { type: Boolean, default: true },  // Indique si la tâche est publique
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }  // Relier la tâche à l'utilisateur qui l'a créée
