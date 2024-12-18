@@ -2,17 +2,17 @@ const mongoose = require('mongoose');
 
 const taskSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  description: { type: String, required: true },
-  time: { type: String, required: true },
-  frequency: { type: String, required: true },
+  room: { type: String, required: true },
+  description: String,
+  time: String,
+  frequency: String,
   what: [String],
   isDone: { type: Boolean, default: false },
-  dateDone: { type: Date, default: null },
-  room: { type: String, required: true },
-  isGlobal: { type: Boolean, default: true },  // Indique si la tâche est publique
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }  // Relier la tâche à l'utilisateur qui l'a créée
-}, {
-  timestamps: true,
+  dateDone: Date, // Ajout de ce champ
+  lastCompleted: Date, // Champ existant
+  nextDue: Date,
+  isGlobal: { type: Boolean, default: false },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
 module.exports = mongoose.model('Task', taskSchema);

@@ -7,7 +7,9 @@ const userMadeTaskSchema = new mongoose.Schema({
   frequency: { type: String, required: true },
   what: [String],
   isDone: { type: Boolean, default: false },
-  dateDone: { type: Date, default: null },
+  dateDone: Date, 
+  lastCompleted: Date, 
+  nextDue: Date,
   resetTimer: { type: Date }, // Nouvelle propriété pour la réinitialisation
   room: { type: String, required: true },
   isGlobal: { type: Boolean, default: false },

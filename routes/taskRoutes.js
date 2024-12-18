@@ -29,7 +29,7 @@ router.post('/', protect, async (req, res) => {
 });
 
 // Valider une tâche (marquer comme terminée)
-router.put('/:taskId/done', protect, async (req, res) => {  
+router.put('/:taskId/done', protect, async (req, res) => {
   try {
     const task = await Task.findById(req.params.taskId);
     if (!task) {
@@ -37,7 +37,9 @@ router.put('/:taskId/done', protect, async (req, res) => {
     }
 
     task.isDone = true;
-    task.lastCompleted = new Date();
+    const now = new Date();
+    task.dateDone = now; // Mise à jour de dateDone
+    task.lastCompleted = now; // Mise à jour de lastCompleted
     task.nextDue = calculateNextDueDate(task.frequency); // Calculer la prochaine échéance selon la fréquence
     await task.save();
 
@@ -47,6 +49,7 @@ router.put('/:taskId/done', protect, async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la mise à jour de la tâche', error });
   }
 });
+
 
 // Route pour récupérer toutes les tâches (publiques + privées)
 router.get("/", protect, async (req, res) => {
