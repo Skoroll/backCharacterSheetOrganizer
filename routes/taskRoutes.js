@@ -28,8 +28,6 @@ router.post('/', protect, async (req, res) => {
   }
 });
 
-
-
 // Valider une tâche (marquer comme terminée)
 router.put('/:taskId/done', protect, async (req, res) => {  
   try {

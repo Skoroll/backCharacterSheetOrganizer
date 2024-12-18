@@ -64,3 +64,16 @@ exports.getUserTasks = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des tâches', error });
   }
 };
+
+// Obtenir les tâches par pièce ou toutes les tâches si aucune pièce n'est spécifiée
+exports.getTasksByRoom = async (req, res) => {
+  const { room } = req.query; // Extraire la pièce depuis les paramètres de requête
+  try {
+    // Si room est spécifiée, filtre sur la pièce sinon récupère toutes les tâches
+    const tasks = await UserMadeTask.find(room ? { room } : {});
+    res.status(200).json(tasks);
+  } catch (error) {
+    console.error('Erreur lors de la récupération des tâches par pièce:', error);
+    res.status(500).json({ message: 'Erreur lors de la récupération des tâches' });
+  }
+};
