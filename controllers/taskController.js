@@ -41,17 +41,37 @@ exports.createTask = async (req, res) => {
 
 
 // Valider une tâche
+const calculateResetTime = (frequency) => {
+  const now = new Date();
+  switch (frequency) {
+    case 'Quotidienne':
+      return new Date(now.getTime() + 24 * 60 * 60 * 1000); // +1 jour
+    case 'Hebdomadaire':
+      return new Date(now.getTime() + 7 * 24 * 60 * 60 * 1000); // +7 jours
+    case 'Mensuelle':
+      return new Date(now.setMonth(now.getMonth() + 1)); // +1 mois
+    default:
+      return null; // Cas par défaut
+  }
+};
+
 exports.validateTask = async (req, res) => {
   try {
     const task = await Task.findById(req.params.taskId);
     if (!task) {
       return res.status(404).json({ message: 'Tâche non trouvée' });
     }
-    task.completed = true;
+
+    // Valider la tâche
+    task.isDone = true;
+    task.dateDone = new Date();
+    task.resetTimer = calculateResetTime(task.frequency);
     await task.save();
-    res.status(200).json({ message: 'Tâche validée', task });
+
+    res.status(200).json({ message: 'Tâche validée avec succès', task });
   } catch (error) {
-    res.status(500).json({ message: 'Erreur lors de la validation de la tâche', error });
+    console.error('Erreur lors de la validation de la tâche:', error);
+    res.status(500).json({ message: 'Erreur serveur', error });
   }
 };
 
@@ -77,3 +97,5 @@ exports.getTasksByRoom = async (req, res) => {
     res.status(500).json({ message: 'Erreur lors de la récupération des tâches' });
   }
 };
+
+

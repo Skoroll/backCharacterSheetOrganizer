@@ -39,6 +39,23 @@ app.use(cors({
   credentials: true,
 }));
 
+cron.schedule('*/5 * * * *', async () => {
+  console.log('Vérification des tâches à réinitialiser...');
+  try {
+    const now = new Date();
+    const tasksToReset = await Task.find({ isDone: true, resetTimer: { $lte: now } });
+
+    for (const task of tasksToReset) {
+      task.isDone = false;
+      task.resetTimer = null; // Réinitialiser le timer
+      await task.save();
+      console.log(`Tâche réinitialisée : ${task.name}`);
+    }
+  } catch (error) {
+    console.error('Erreur lors de la réinitialisation des tâches:', error);
+  }
+});
+
 // Middlewares globaux
 app.use(express.json());
 

@@ -8,11 +8,15 @@ const userMadeTaskSchema = new mongoose.Schema({
   what: [String],
   isDone: { type: Boolean, default: false },
   dateDone: { type: Date },
+  resetTimer: { type: Date }, // Nouvelle propriété pour la réinitialisation
   room: { type: String, required: true },
-  isGlobal: { type: Boolean, default: false },  // Indique si la tâche est publique
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }  // Relier la tâche à l'utilisateur qui l'a créée
+  isGlobal: { type: Boolean, default: false },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
 }, {
   timestamps: true,
 });
+
+module.exports = mongoose.model('UserMadeTask', userMadeTaskSchema);
+
 
 module.exports = mongoose.model('UserMadeTask', userMadeTaskSchema);
