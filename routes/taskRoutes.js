@@ -50,6 +50,7 @@ router.put('/:taskId/done', protect, async (req, res) => {
   }
 });
 
+router.put('/:taskId/undone', protect, unValidateTask);
 
 // Route pour récupérer toutes les tâches (publiques + privées)
 router.get("/", protect, async (req, res) => {

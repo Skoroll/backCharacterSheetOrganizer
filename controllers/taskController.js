@@ -75,6 +75,28 @@ exports.validateTask = async (req, res) => {
   }
 };
 
+exports.unValidateTask = async (req, res) => {
+  try {
+    const task = await Task.findById(req.params.taskId);
+    if (!task) {
+      return res.status(404).json({ message: 'Tâche non trouvée' });
+    }
+
+    // Dévalider la tâche
+    task.isDone = false;
+    task.dateDone = null; // Utilisez null au lieu de ""
+    task.resetTimer = null; // Utilisez null au lieu de ""
+    task.lastCompleted = null; // Facultatif, selon vos besoins
+    task.nextDue = null; // Facultatif, à recalculer si nécessaire
+    await task.save();
+
+    res.status(200).json({ message: 'Tâche dévalidée avec succès', task });
+  } catch (error) {
+    console.error('Erreur lors de la dévalidation de la tâche:', error);
+    res.status(500).json({ message: 'Erreur serveur', error });
+  }
+};
+
 // Obtenir toutes les tâches d'un utilisateur
 exports.getUserTasks = async (req, res) => {
   try {
