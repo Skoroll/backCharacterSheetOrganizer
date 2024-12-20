@@ -3,6 +3,7 @@ const express = require('express');
 const { protect } = require('../middlewares/authMiddleware');
 const Task = require('../models/userMadeTaskModel');
 const router = express.Router();
+const { unValidateTask } = require('../controllers/taskController');
 
 // Créer une nouvelle tâche
 router.post('/', protect, async (req, res) => {
