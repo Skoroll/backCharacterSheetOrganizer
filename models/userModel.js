@@ -16,21 +16,6 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
     },
-    profileImage: {
-      type: String,
-      default: '',
-    },
-    rooms: {
-      type: [String], // Tableau de chaînes de caractères
-      default: [],
-    },
-    /*equipments: {
-      type: [String],
-      default: [],
-    },*/
-  },
-  {
-    timestamps: true, // Ajoute createdAt et updatedAt
   }
 );
 

@@ -2,21 +2,14 @@ const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const userRoutes = require('./routes/userRoutes');
-const taskRoutes = require('./routes/taskRoutes');
-const achievementsRoutes = require('./routes/achievementsRoutes');
-const cron = require('node-cron');
-const Task = require('./models/taskModel');
+const characterRoutes = require('./routes/characterRoutes');
 const cors = require('cors');
 const path = require('path');
-const uploadMiddleware = require('./middlewares/uploadMiddleware'); // Importer le middleware
 
 // Chargement des variables d'environnement
 dotenv.config();
 
 const app = express();
-
-// Middleware pour servir les fichiers statiques
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // Connexion à MongoDB
 mongoose
@@ -27,47 +20,19 @@ mongoose
   .then(() => console.log('MongoDB connected'))
   .catch((err) => console.error('MongoDB connection error:', err));
 
-  //
 // Configuration de CORS
 app.use(cors({
-  origin: [
-    'http://localhost:3000',
-    'https://skoroll.github.io',
-    'https://cleanback.fly.dev', // Ajout de l'origine Fly.io
-  ],
+  origin: 'http://localhost:5173',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
 
-cron.schedule('*/5 * * * *', async () => {
-  console.log('Vérification des tâches à réinitialiser...');
-  try {
-    const now = new Date();
-    const tasksToReset = await Task.find({ isDone: true, resetTimer: { $lte: now } });
-
-    for (const task of tasksToReset) {
-      task.isDone = false;
-      task.resetTimer = null; // Réinitialiser le timer
-      await task.save();
-      console.log(`Tâche réinitialisée : ${task.name}`);
-    }
-  } catch (error) {
-    console.error('Erreur lors de la réinitialisation des tâches:', error);
-  }
-});
-
-// Middlewares globaux
+// Middleware global
 app.use(express.json());
 
-// Ajouter la route pour l'upload
-app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
-
-
-// Routes
+// Routes d'authentification
 app.use('/api/users', userRoutes);
-app.use('/api/tasks', taskRoutes);
-app.use('/api/achievements', achievementsRoutes);
-
+app.use("/api/characters", characterRoutes);
 // Démarrage du serveur
 const PORT = 8080;
 app.listen(PORT, '0.0.0.0', () => {

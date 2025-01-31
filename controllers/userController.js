@@ -1,12 +1,10 @@
 const User = require('../models/userModel');
-const Task = require('../models/taskModel'); // Modèle pour les tâches globales
-const UserMadeTask = require('../models/userMadeTaskModel'); // Modèle pour les tâches utilisateurs
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcrypt');
 const uploadMiddleware = require('../middlewares/uploadMiddleware');  // Assure-toi que le chemin est correct
 const fs = require('fs');
 const path = require('path');
-const userService = require('../services/userServices');
+
 
 
 // Vérifier et créer le répertoire `uploads` si nécessaire
@@ -18,7 +16,7 @@ if (!fs.existsSync(uploadDir)) {
 
 // Fonction pour l'inscription d'un utilisateur
 exports.register = async (req, res) => {
-  const { name, email, password, rooms } = req.body;
+  const { name, email, password } = req.body;
 
   if (!name || !email || !password) {
     return res.status(400).json({ message: "Les champs 'name', 'email' et 'password' sont obligatoires." });
@@ -31,27 +29,7 @@ exports.register = async (req, res) => {
       name,
       email,
       password: hashedPassword,
-      rooms: rooms ? JSON.parse(rooms) : [],
-      profileImage: req.file ? req.file.path.replace(/\\/g, '/') : null,
     });
-
-    // Récupérer les tâches globales
-    const globalTasks = await Task.find();
-    
-    // Dupliquer les tâches globales pour le nouvel utilisateur
-    const userTasks = globalTasks.map(task => ({
-      name: task.name,
-      description: task.description,
-      time: task.time,
-      what: task.what,
-      frequency: task.frequency,
-      room: task.room,
-      dateDone: task.dateDone || null, // Assure la présence du champ
-      user: newUser._id,
-    }));
-
-    // Insérer les tâches utilisateur dans la collection UserMadeTask
-    await UserMadeTask.insertMany(userTasks);
 
     res.status(201).json({
       message: "Utilisateur créé avec succès.",
@@ -129,13 +107,28 @@ exports.getProfile = async (req, res) => {
 exports.updateUser = async (req, res) => {
   try {
     const userId = req.user.id;
-    const { name, email, password, rooms } = req.body;
+    const { name, email, password, oldPassword } = req.body; // Ajout du `oldPassword`
     console.log("Données reçues:", req.body); // Log pour vérifier les données envoyées
     console.log("Fichier reçu:", req.file); // Log pour vérifier le fichier reçu
     
     const user = await User.findById(userId);
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+
+    // Vérifier et modifier le mot de passe si nécessaire
+    if (password) {
+      // Vérifier si l'ancien mot de passe est correct
+      if (!oldPassword) {
+        return res.status(400).json({ message: 'L\'ancien mot de passe est requis.' });
+      }
+      const isMatch = await bcrypt.compare(oldPassword, user.password);
+      if (!isMatch) {
+        return res.status(400).json({ message: 'L\'ancien mot de passe est incorrect.' });
+      }
+    
+      // Hacher le nouveau mot de passe avant de le sauvegarder
+      user.password = await bcrypt.hash(password, 10);
     }
 
     // Supprimer l'ancienne image de profil si elle existe et si une nouvelle image est fournie
@@ -150,7 +143,6 @@ exports.updateUser = async (req, res) => {
     const updates = {
       ...(name && { name }),
       ...(email && { email }),
-      ...(rooms && { rooms: JSON.parse(rooms) }),
     };
     
     if (password) {
@@ -183,6 +175,7 @@ exports.updateUser = async (req, res) => {
 };
 
 
+
 // Fonction pour supprimer un utilisateur et ses tâches
 exports.deleteUser = async (req, res) => {
   try {
@@ -201,10 +194,6 @@ exports.deleteUser = async (req, res) => {
         fs.unlinkSync(imagePath); // Supprimer l'image
       }
     }
-
-    // Supprime les tâches associées à l'utilisateur
-    const tasksToDelete = await UserMadeTask.deleteMany({ user: userId });
-    console.log(`Tâches supprimées : ${tasksToDelete.deletedCount}`);
 
     // Supprime l'utilisateur
     await User.findByIdAndDelete(userId);

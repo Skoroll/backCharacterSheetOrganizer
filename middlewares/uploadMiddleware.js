@@ -18,4 +18,5 @@ const storage = multer.diskStorage({
 });
 
 // Exporter correctement le middleware
-module.exports = multer({ storage: storage }).single('profileImage');  // 'profileImage' est le nom du champ d'upload
+const uploadMiddleware = require('../middlewares/uploadMiddleware').default || require('../middlewares/uploadMiddleware');
+
