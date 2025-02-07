@@ -8,7 +8,7 @@ const MIME_TYPES = {
 
 const storage = multer.diskStorage({
   destination: (req, file, callback) => {
-    callback(null, 'uploads');  // Utilisation de 'uploads' comme répertoire de destination
+    callback(null, 'uploads');  // Utilisation du dossier 'uploads'
   },
   filename: (req, file, callback) => {
     const name = file.originalname.split(' ').join('_').split('.')[0];
@@ -17,6 +17,8 @@ const storage = multer.diskStorage({
   }
 });
 
-// Exporter correctement le middleware
-const uploadMiddleware = require('../middlewares/uploadMiddleware').default || require('../middlewares/uploadMiddleware');
+// Middleware multer exporté
+const upload = multer({ storage: storage });
 
+// Exportation du middleware 'upload'
+module.exports = upload;

@@ -1,45 +1,42 @@
-import mongoose from "mongoose";
+// models/Character.js
+import mongoose from 'mongoose';
 
-const { Schema, model } = mongoose;
-
-// Schéma pour une arme
-const WeaponSchema = new Schema({
+const characterSchema = new mongoose.Schema({
   name: { type: String, required: true },
-  damage: { type: String, required: true },
-});
-
-// Schéma pour une compétence spéciale
-const SkillSchema = new Schema({
-  specialSkill: { type: String },
-  link1: { type: String },
-  link2: { type: String },
-  score: { type: String },
-});
-
-// Schéma pour un objet d'inventaire
-const InventoryItemSchema = new Schema({
-  item: { type: String },
-  quantity: { type: String },
-});
-
-// Schéma principal du personnage
-const CharacterSchema = new Schema({
-  image: { type: String, required: true }, // URL de l'image stockée
   className: { type: String, required: true },
-  name: { type: String, required: true },
   age: { type: Number, required: true },
   strength: { type: Number, required: true },
   dexterity: { type: Number, required: true },
   endurance: { type: Number, required: true },
   intelligence: { type: Number, required: true },
   charisma: { type: Number, required: true },
-  weapons: { type: [WeaponSchema], required: true, validate: v => v.length > 0 }, // Minimum 1 arme
   pointsOfLife: { type: Number, required: true },
-  injuries: { type: Number, required: true },
-  protection: { type: Number, required: true },
-  skills: { type: [SkillSchema], default: [] }, // Facultatif
-  inventory: { type: [InventoryItemSchema], default: [] }, // Facultatif
+  gold: { type: Number, required: true },
+  injuries: { type: String, required: true },
+  protection: { type: String, required: true },
   background: { type: String, required: true },
+  origin: { type: String, required: true },
+
+  // Champs optionnels pour les armes, compétences et inventaire
+  weapons: [{
+    name: { type: String, required: false },
+    damage: { type: String, required: false }
+  }],
+  skills: [{
+    specialSkill: { type: String, required: false },
+    link1: { type: String, required: false },
+    link2: { type: String, required: false },
+    score: { type: Number, required: false }
+  }],
+  inventory: [{
+    item: { type: String, required: false },
+    quantity: { type: Number, required: false }
+  }],
+  image: { type: String, required: false },
+
+  // Associer le personnage à un utilisateur
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 
-export default model("Character", CharacterSchema);
+const Character = mongoose.model('Character', characterSchema);
+export default Character;

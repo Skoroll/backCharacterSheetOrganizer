@@ -5,8 +5,6 @@ const uploadMiddleware = require('../middlewares/uploadMiddleware');  // Assure-
 const fs = require('fs');
 const path = require('path');
 
-
-
 // Vérifier et créer le répertoire `uploads` si nécessaire
 const uploadDir = path.join(__dirname, '..', 'uploads');
 
@@ -44,28 +42,24 @@ exports.register = async (req, res) => {
   }
 };
 
-
-
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
-  console.log("Données reçues pour la connexion :", req.body); // Ajoutez un log ici
+
   const { email, password } = req.body;
 
   if (!email || !password) {
-    console.log("Champs manquants : email ou mot de passe");
     return res.status(400).json({ message: "Les champs 'email' et 'password' sont obligatoires." });
   }
 
   try {
-    const user = await User.findOne({ email });
-    console.log("Utilisateur trouvé :", user); // Vérifiez si un utilisateur est trouvé
+
     if (!user) {
-      console.log("Aucun utilisateur trouvé avec cet email");
+
       return res.status(401).json({ message: "Email ou mot de passe incorrect." });
     }
 
     const match = await bcrypt.compare(password.trim(), user.password);
-    console.log("Mot de passe correspond :", match); // Vérifiez le résultat de la comparaison
+
     if (!match) {
       return res.status(401).json({ message: "Email ou mot de passe incorrect." });
     }
@@ -82,9 +76,6 @@ exports.login = async (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
-
-
-
 
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {
@@ -108,8 +99,6 @@ exports.updateUser = async (req, res) => {
   try {
     const userId = req.user.id;
     const { name, email, password, oldPassword } = req.body; // Ajout du `oldPassword`
-    console.log("Données reçues:", req.body); // Log pour vérifier les données envoyées
-    console.log("Fichier reçu:", req.file); // Log pour vérifier le fichier reçu
     
     const user = await User.findById(userId);
     if (!user) {
@@ -174,8 +163,6 @@ exports.updateUser = async (req, res) => {
   }
 };
 
-
-
 // Fonction pour supprimer un utilisateur et ses tâches
 exports.deleteUser = async (req, res) => {
   try {
@@ -204,4 +191,3 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
-

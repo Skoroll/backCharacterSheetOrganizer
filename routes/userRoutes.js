@@ -1,21 +1,13 @@
 const express = require('express');
-const userController = require('../controllers/userController');
-const { protect } = require('../middlewares/authMiddleware');
 const router = express.Router();
+const userController = require('../controllers/userController');
+const authMiddleware = require('../middlewares/authMiddleware');
+const uploadMiddleware = require('../middlewares/uploadMiddleware');
 
-// Route pour l'inscription
 router.post('/register', userController.register);
-
-// Route pour la connexion
 router.post('/login', userController.login);
-
-// Route pour récupérer le profil de l'utilisateur connecté
-router.get('/profile', protect, userController.getProfile);
-
-// Route pour mettre à jour le profil de l'utilisateur
-router.put('/update', protect, userController.updateUser);
-
-// Route pour supprimer l'utilisateur
-router.delete('/delete', protect, userController.deleteUser);
+router.get('/profile', authMiddleware.protect, userController.getProfile);
+router.put('/profile', authMiddleware.protect, uploadMiddleware.single('profileImage'), userController.updateUser);
+router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 
 module.exports = router;

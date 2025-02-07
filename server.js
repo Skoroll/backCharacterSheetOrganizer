@@ -2,7 +2,9 @@ const express = require('express');
 const dotenv = require('dotenv');
 const mongoose = require('mongoose');
 const userRoutes = require('./routes/userRoutes');
+const chatRoutes = require('./routes/chat'); 
 const characterRoutes = require('./routes/characterRoutes');
+const tableTopRoutes = require('./routes/tabletopRoutes')
 const cors = require('cors');
 const path = require('path');
 
@@ -22,7 +24,7 @@ mongoose
 
 // Configuration de CORS
 app.use(cors({
-  origin: 'http://localhost:5173',
+  origin: 'http://localhost:5174',
   methods: ['GET', 'POST', 'PUT', 'DELETE'],
   credentials: true,
 }));
@@ -30,9 +32,18 @@ app.use(cors({
 // Middleware global
 app.use(express.json());
 
+app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
+
+
 // Routes d'authentification
 app.use('/api/users', userRoutes);
+
 app.use("/api/characters", characterRoutes);
+
+app.use("/api/tabletop", tableTopRoutes);
+
+app.use('/api/chat', chatRoutes);
+
 // Démarrage du serveur
 const PORT = 8080;
 app.listen(PORT, '0.0.0.0', () => {

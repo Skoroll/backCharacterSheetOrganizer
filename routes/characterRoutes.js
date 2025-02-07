@@ -1,19 +1,48 @@
 const express = require('express');
+const multer = require("multer");
+const { protect } = require('../middlewares/authMiddleware');
+
 const {
   createCharacter,
-  getCharacterById,
   getAllCharacters,
+  getCharacterById,
   updateCharacter,
   deleteCharacter,
+  getUserCharacters, 
+  getCharactersByUser,
 } = require('../controllers/characterController');
 
 const router = express.Router();
 
-// 🔹 Route pour créer un personnage
-router.post("/", createCharacter);
+// Configuration de Multer pour gérer l'upload des fichiers
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Assure-toi que ce dossier existe
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname); // Renommer le fichier pour éviter les conflits
+  },
+});
+
+const upload = multer({ storage });
+
+
+// 🔹 Route pour récupérer uniquement les personnages de l'utilisateur connecté
+router.get("/user", protect, (req, res, next) => {
+  console.log("🔹 Requête reçue sur /api/characters/user");
+  next();
+}, getUserCharacters);
 
 // 🔹 Route pour récupérer tous les personnages
-router.get("/", getAllCharacters);
+router.get("/", (req, res, next) => {
+  console.log("🔹 Requête reçue sur /api/characters");
+  next();
+}, getAllCharacters);
+
+// 🔹 Route pour créer un personnage avec upload de fichier
+router.post("/", protect, upload.single("image"), createCharacter);
+
+
 
 // 🔹 Route pour récupérer un personnage par son ID
 router.get("/:id", getCharacterById);
@@ -21,7 +50,12 @@ router.get("/:id", getCharacterById);
 // 🔹 Route pour mettre à jour un personnage
 router.put("/:id", updateCharacter);
 
+router.get("/characters", protect, getCharactersByUser);
+
 // 🔹 Route pour supprimer un personnage
 router.delete("/:id", deleteCharacter);
+console.log("getUserCharacters:", getUserCharacters);
+console.log("createCharacter:", createCharacter);
+console.log("getCharacterById:", getCharacterById);
 
-module.exports = router;  // Exportation correcte
+module.exports = router;
