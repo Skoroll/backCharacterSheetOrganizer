@@ -2,15 +2,16 @@ const express = require('express');
 const multer = require("multer");
 const { protect } = require('../middlewares/authMiddleware');
 
-const {
+const { 
   createCharacter,
   getAllCharacters,
   getCharacterById,
   updateCharacter,
   deleteCharacter,
-  getUserCharacters, 
-  getCharactersByUser,
+  getUserCharacters,
+  getCharactersByUser
 } = require('../controllers/characterController');
+
 
 const router = express.Router();
 

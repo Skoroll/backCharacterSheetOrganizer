@@ -11,6 +11,7 @@ const playerSchema = new mongoose.Schema({
   playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
   playerName: String,
   selectedCharacter: { type: mongoose.Schema.Types.ObjectId, ref: 'Character' }, // Ajout de selectedCharacter
+
 });
 
 const tableTopSchema = new mongoose.Schema({

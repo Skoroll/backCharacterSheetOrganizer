@@ -1,4 +1,5 @@
 const TableTop = require('../models/tabletopModel');
+
 const bcrypt = require('bcrypt');
 
 // Créer une nouvelle table
@@ -88,10 +89,10 @@ exports.addPlayer = async (req, res) => {
   console.log("🔍 Requête reçue :", req.body);
 
   const { id: tableId } = req.params;
-  const { playerId, playerName, password } = req.body;
+  const { playerId, playerName, selectedCharacter, password } = req.body;  // Récupération de selectedCharacter et password
 
-  if (!playerId || !playerName) {
-    console.log("❌ Données utilisateur manquantes :", { playerId, playerName });
+  if (!playerId || !playerName || !selectedCharacter) {  // Vérification de selectedCharacter
+    console.log("❌ Données utilisateur manquantes :", { playerId, playerName, selectedCharacter });
     return res.status(400).json({ message: "Données utilisateur manquantes" });
   }
 
@@ -113,8 +114,8 @@ exports.addPlayer = async (req, res) => {
       return res.status(400).json({ message: "Mot de passe incorrect" });
     }
 
-    // Ajouter le joueur
-    table.players.push({ playerId, playerName });
+    // Ajouter le joueur avec le personnage sélectionné
+    table.players.push({ playerId, playerName, selectedCharacter });  // Ajout de selectedCharacter
     await table.save();
 
     res.status(200).json({ message: "Bienvenue sur la table", isNewPlayer: true });
@@ -123,6 +124,7 @@ exports.addPlayer = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 //Supprime une table
 exports.deleteTable = async (req, res) => {
@@ -167,17 +169,24 @@ exports.getPlayersFromTable = async (req, res) => {
   const tableId = req.params.id;
   console.log("Requête reçue pour la table ID :", tableId);
   try {
-    const table = await TableTop.findById(tableId);
+    const table = await TableTop.findById(tableId)
+      .populate({
+        path: 'players.selectedCharacter', // Populer le champ selectedCharacter pour chaque joueur
+        select: 'name image' // Sélectionner uniquement les champs dont on a besoin
+      });
+
     if (!table) {
       return res.status(404).json({ message: 'Table non trouvée' });
     }
-    console.log("Joueurs de la table :", table.players);  // Log pour vérifier les joueurs
+
+    console.log("Joueurs de la table avec personnages peuplés :", table.players);
     res.status(200).json(table.players);
   } catch (error) {
     console.error("Erreur serveur", error);
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
+
 
 
 
