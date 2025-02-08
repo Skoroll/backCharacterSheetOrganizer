@@ -44,23 +44,26 @@ exports.register = async (req, res) => {
 
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
-
+  console.log("Requête reçue :", req.body);
   const { email, password } = req.body;
-
   if (!email || !password) {
+    console.log("Données manquantes :", { email, password });
     return res.status(400).json({ message: "Les champs 'email' et 'password' sont obligatoires." });
   }
 
   try {
+    // Récupération de l'utilisateur en base de données
+    const user = await User.findOne({ email });
 
     if (!user) {
-
+      console.log("Utilisateur non trouvé :", email);
       return res.status(401).json({ message: "Email ou mot de passe incorrect." });
     }
 
     const match = await bcrypt.compare(password.trim(), user.password);
-
+    console.log("Mot de passe correct :", match);
     if (!match) {
+      console.log("Mot de passe incorrect :", password, "Attendu :", user.password);
       return res.status(401).json({ message: "Email ou mot de passe incorrect." });
     }
 
@@ -69,13 +72,23 @@ exports.login = async (req, res) => {
     res.status(200).json({
       message: 'Connexion réussie',
       token,
-      user: { id: user._id, name: user.name, email: user.email, profileImage: user.profileImage },
+      user: { id: user._id, name: user.name, email: user.email },
     });
   } catch (err) {
     console.error("Erreur lors de la connexion :", err);
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
+
+
+async function testHash() {
+  const password = "test";
+  const salt = await bcrypt.genSalt(10);
+  const hashedPassword = await bcrypt.hash(password, salt);
+  console.log("Hash du mot de passe 'Test' :", hashedPassword);
+}
+
+testHash();
 
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {
@@ -97,6 +110,7 @@ exports.getProfile = async (req, res) => {
 // Fonction pour la modification du profil
 exports.updateUser = async (req, res) => {
   try {
+    
     const userId = req.user.id;
     const { name, email, password, oldPassword } = req.body; // Ajout du `oldPassword`
     
@@ -191,3 +205,19 @@ exports.deleteUser = async (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
+
+
+// Fonction pour récupérer un utilisateur spécifique par son ID
+exports.getUserById = async (req, res) => {
+  try {
+    const user = await User.findById(req.params.id).select('-password');
+    if (!user) {
+      return res.status(404).json({ message: 'Utilisateur non trouvé.' });
+    }
+    res.status(200).json(user);
+  } catch (error) {
+    console.error('Erreur lors de la récupération de l\'utilisateur :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+

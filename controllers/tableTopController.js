@@ -83,8 +83,6 @@ exports.verifyPassword = async (req, res) => {
   }
 };
 
-
-
 // Ajouter un joueur
 exports.addPlayer = async (req, res) => {
   const { id: tableId } = req.params;
@@ -132,8 +130,6 @@ exports.addPlayer = async (req, res) => {
   }
 };
 
-
-
 //Supprime une table
 exports.deleteTable = async (req, res) => {
   const tableId = req.params.id;
@@ -151,7 +147,6 @@ exports.deleteTable = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
-
 
 exports.updateNotes = async (req, res) => {
   const { id } = req.params;
