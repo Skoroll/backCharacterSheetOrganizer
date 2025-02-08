@@ -81,14 +81,26 @@ exports.login = async (req, res) => {
 };
 
 
-async function testHash() {
-  const password = "test";
-  const salt = await bcrypt.genSalt(10);
-  const hashedPassword = await bcrypt.hash(password, salt);
-  console.log("Hash du mot de passe 'Test' :", hashedPassword);
-}
+// Fonction pour récupérer plusieurs utilisateurs par leurs IDs
+exports.getPlayersByIds = async (req, res) => {
+  const playerIds = req.query.ids.split(','); // Récupère les IDs depuis la query string
 
-testHash();
+  try {
+    // Recherche les utilisateurs avec les IDs fournis
+    const players = await User.find({ '_id': { $in: playerIds } }).select('-password');
+
+    if (!players || players.length === 0) {
+      return res.status(404).json({ message: 'Aucun joueur trouvé.' });
+    }
+
+    res.status(200).json(players); // Retourne les joueurs trouvés
+  } catch (error) {
+    console.error('Erreur lors de la récupération des joueurs :', error);
+    res.status(500).json({ message: 'Erreur interne du serveur.' });
+  }
+};
+
+
 
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {

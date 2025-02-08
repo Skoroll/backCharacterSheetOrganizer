@@ -124,9 +124,6 @@ exports.addPlayer = async (req, res) => {
   }
 };
 
-
-
-
 //Supprime une table
 exports.deleteTable = async (req, res) => {
   const tableId = req.params.id;
@@ -164,3 +161,26 @@ exports.updateNotes = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
+
+// Récupérer les joueurs d'une table
+exports.getPlayersFromTable = async (req, res) => {
+  const tableId = req.params.id;
+  console.log("Requête reçue pour la table ID :", tableId);
+  try {
+    const table = await TableTop.findById(tableId);
+    if (!table) {
+      return res.status(404).json({ message: 'Table non trouvée' });
+    }
+    console.log("Joueurs de la table :", table.players);  // Log pour vérifier les joueurs
+    res.status(200).json(table.players);
+  } catch (error) {
+    console.error("Erreur serveur", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
+
+
+
+
+
+

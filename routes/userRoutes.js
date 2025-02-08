@@ -10,5 +10,6 @@ router.get('/profile', authMiddleware.protect, userController.getProfile);
 router.put('/profile', authMiddleware.protect, uploadMiddleware.single('profileImage'), userController.updateUser);
 router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 router.get('/users/:id', userController.getUserById);
+router.get('/players', userController.getPlayersByIds);
 
 module.exports = router;
