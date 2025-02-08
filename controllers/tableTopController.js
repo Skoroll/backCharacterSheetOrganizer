@@ -85,8 +85,15 @@ exports.verifyPassword = async (req, res) => {
 
 // Ajouter un joueur
 exports.addPlayer = async (req, res) => {
+  console.log("🔍 Requête reçue :", req.body);
+
   const { id: tableId } = req.params;
-  const { playerId, password } = req.body;
+  const { playerId, playerName, password } = req.body;
+
+  if (!playerId || !playerName) {
+    console.log("❌ Données utilisateur manquantes :", { playerId, playerName });
+    return res.status(400).json({ message: "Données utilisateur manquantes" });
+  }
 
   try {
     const table = await TableTop.findById(tableId);
@@ -95,40 +102,30 @@ exports.addPlayer = async (req, res) => {
     }
 
     // Vérifier si le joueur est déjà dans la table
-    const existingPlayer = table.players.find(p => p.playerId && p.playerId.toString() === playerId);
-
+    const existingPlayer = table.players.find(p => p.playerId?.toString() === playerId);
     if (existingPlayer) {
-      if (existingPlayer.hasEnteredPassword) {
-        return res.status(200).json({ message: "Le joueur est déjà dans la table." });
-      } else {
-        // Vérification du mot de passe
-        const match = await bcrypt.compare(password, table.password);
-        if (!match) {
-          return res.status(400).json({ message: "Mot de passe incorrect" });
-        }
-        // Mise à jour de hasEnteredPassword
-        existingPlayer.hasEnteredPassword = true;
-        await table.save();
-        return res.status(200).json({ message: "Joueur ajouté avec succès après vérification du mot de passe" });
-      }
+      return res.status(200).json({ message: "Retour sur la table", isNewPlayer: false });
     }
 
-    // Si le joueur n'existe pas, vérifier le mot de passe
+    // Vérification du mot de passe
     const match = await bcrypt.compare(password, table.password);
     if (!match) {
       return res.status(400).json({ message: "Mot de passe incorrect" });
     }
 
     // Ajouter le joueur
-    table.players.push({ playerId, hasEnteredPassword: true });
+    table.players.push({ playerId, playerName });
     await table.save();
 
-    res.status(200).json({ message: "Joueur ajouté avec succès" });
+    res.status(200).json({ message: "Bienvenue sur la table", isNewPlayer: true });
   } catch (err) {
-    console.error("Erreur lors de l'ajout du joueur", err);
+    console.error("❌ Erreur lors de l'ajout du joueur :", err);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+
+
 
 //Supprime une table
 exports.deleteTable = async (req, res) => {
