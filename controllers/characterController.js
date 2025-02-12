@@ -3,15 +3,38 @@ import Character from "../models/characterModel.js";
 // 📌 Créer un personnage avec image
 export const createCharacter = async (req, res) => {
   try {
-      const { name, age, className, strength, dexterity, endurance, intelligence, charisma, pointsOfLife, injuries, protection, background, gold, origin } = req.body;
-      
+      console.log("🔹 Requête reçue:", req.body);
+
+      // Extraction des données
+      const { 
+          name, age, className, strength, dexterity, endurance, intelligence, charisma, 
+          pointsOfLife, injuries, protection, background, gold, origin, weapons, skills, inventory 
+      } = req.body;
+
+      // Vérification des champs obligatoires
       if (!name || !age) {
           return res.status(400).json({ message: "Certains champs obligatoires sont manquants" });
       }
 
-      // ✅ Ajoute ici imagePath AVANT d'utiliser new Character()
+      // Traitement de l'image
       const imagePath = req.file ? `uploads/${req.file.filename}` : null;
 
+      // 📌 Logs avant parsing
+      console.log("📌 Weapons avant parsing:", weapons);
+      console.log("📌 Skills avant parsing:", skills);
+      console.log("📌 Inventory avant parsing:", inventory);
+
+      // Parsing des chaînes JSON envoyées par le front
+      const weaponsArr = JSON.parse(weapons || "[]");
+      const skillsArr = JSON.parse(skills || "[]");
+      const inventoryArr = JSON.parse(inventory || "[]");
+
+      // 📌 Logs après parsing
+      console.log("📌 Weapons après parsing:", weaponsArr);
+      console.log("📌 Skills après parsing:", skillsArr);
+      console.log("📌 Inventory après parsing:", inventoryArr);
+
+      // Création du personnage avec les données parsées
       const newCharacter = new Character({
           name,
           age,
@@ -27,30 +50,31 @@ export const createCharacter = async (req, res) => {
           background,
           gold,
           origin,
-          image: imagePath, // ✅ Utilise l'image ici
+          image: imagePath,
+          weapons: weaponsArr,   // Stocké directement dans le modèle
+          skills: skillsArr, 
+          inventory: inventoryArr,
           userId: req.user.id
       });
 
       await newCharacter.save();
 
-      // ✅ Génère l'URL complète pour l'image
+      // Générer l'URL de l'image
       const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/${imagePath}` : null;
 
       res.status(201).json({ 
         message: "Personnage créé avec succès", 
         character: { 
           ...newCharacter._doc, 
-          image: imageUrl  // ✅ Renvoie l'URL complète
+          image: imageUrl  
         } 
       });
 
   } catch (error) {
-      console.error("Erreur lors de la création du personnage:", error);
-      res.status(500).json({ message: "Erreur interne du serveur" });
+      console.error("❌ Erreur lors de la création du personnage:", error);
+      res.status(500).json({ message: "Erreur interne du serveur", error });
   }
 };
-
-
 
 
 // 📌 Récupérer un personnage par son ID
@@ -129,11 +153,21 @@ export const getUserCharacters = async (req, res) => {
 
 export const getCharactersByUser = async (req, res) => {
   try {
-    const userId = req.user.id; // Assure-toi que req.user est bien défini
-    const characters = await Character.find({ userId }); // Filtrage par userId
-    res.json(characters);
-  } catch (err) {
-    res.status(500).json({ message: "Erreur lors de la récupération des personnages." });
+    const characters = await Character.find({ userId: req.user.id })
+      .populate('weapons')  // Résoudre les références des armes
+      .populate('skills')   // Résoudre les références des compétences
+      .populate('inventory') // Résoudre les références des objets
+      .exec();
+
+    if (!characters) {
+      return res.status(404).json({ message: "Aucun personnage trouvé" });
+    }
+
+    res.status(200).json({ characters });
+  } catch (error) {
+    console.error("❌ Erreur lors de la récupération des personnages:", error);
+    res.status(500).json({ message: "Erreur interne du serveur", error });
   }
 };
+
 

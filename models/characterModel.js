@@ -1,4 +1,3 @@
-// models/Character.js
 import mongoose from 'mongoose';
 
 const characterSchema = new mongoose.Schema({
@@ -17,24 +16,29 @@ const characterSchema = new mongoose.Schema({
   background: { type: String, required: true },
   origin: { type: String, required: true },
 
-  // Champs optionnels pour les armes, compétences et inventaire
+  // Armes : Entrées manuelles par l'utilisateur
   weapons: [{
     name: { type: String, required: false },
     damage: { type: String, required: false }
   }],
+  
+  // Compétences : Entrées manuelles par l'utilisateur
   skills: [{
     specialSkill: { type: String, required: false },
     link1: { type: String, required: false },
     link2: { type: String, required: false },
     score: { type: Number, required: false }
   }],
+  
+  // Inventaire : Entrées manuelles par l'utilisateur
   inventory: [{
     item: { type: String, required: false },
     quantity: { type: Number, required: false }
   }],
+  
   image: { type: String, required: false },
 
-  // Associer le personnage à un utilisateur
+  // Lien vers l'utilisateur
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 

@@ -145,15 +145,6 @@ exports.updateUser = async (req, res) => {
       // Hacher le nouveau mot de passe avant de le sauvegarder
       user.password = await bcrypt.hash(password, 10);
     }
-
-    // Supprimer l'ancienne image de profil si elle existe et si une nouvelle image est fournie
-    if (req.file && user.profileImage) {
-      const oldImagePath = path.join(__dirname, '..', user.profileImage);
-      if (fs.existsSync(oldImagePath)) {
-        fs.unlinkSync(oldImagePath); // Supprimer l'ancienne image
-      }
-    }
-
     // Préparer les mises à jour
     const updates = {
       ...(name && { name }),

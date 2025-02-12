@@ -16,6 +16,7 @@ const userSchema = mongoose.Schema(
       type: String,
       required: true,
     },
+    tablesJoined: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Table' }] // Stocke les tables rejointes
   }
 );
 

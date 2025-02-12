@@ -1,19 +1,20 @@
 const mongoose = require("mongoose");
 
+// Définir un schéma pour les notes du Game Master
 const gameMasterNotesSchema = new mongoose.Schema({
-  characters: { type: String, default: "" },
-  quest: { type: String, default: "" },
-  other: { type: String, default: "" },
-  items: { type: String, default: "" },
+  notes: { type: String, default: "" }, // Par exemple, une propriété 'notes' de type String
+  // Ajoutez d'autres propriétés si nécessaire pour vos notes
 });
 
+// Définir le schéma des joueurs
 const playerSchema = new mongoose.Schema({
-  playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'Player' },
+  playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
   playerName: String,
-  selectedCharacter: { type: mongoose.Schema.Types.ObjectId, ref: 'Character' }, // Ajout de selectedCharacter
-
+  selectedCharacter: { type: mongoose.Schema.Types.ObjectId, ref: 'Character' },
+  isGameMaster: { type: Boolean, default: false },
 });
 
+// Définir le schéma des tables
 const tableTopSchema = new mongoose.Schema({
   name: {
     type: String,
@@ -21,6 +22,10 @@ const tableTopSchema = new mongoose.Schema({
     unique: true,
   },
   password: {
+    type: String,
+    required: true,
+  },
+  game : {
     type: String,
     required: true,
   },
@@ -36,10 +41,14 @@ const tableTopSchema = new mongoose.Schema({
   },
   players: [playerSchema],
   gameMasterNotes: {
-    type: gameMasterNotesSchema, // Utilisation du sous-schéma
-    default: {}, // Par défaut, l'objet est vide
+    type: gameMasterNotesSchema, // Référence au schéma des notes du game master
+    default: {}, // Valeur par défaut vide
   },
 });
 
+
+
+// Créer le modèle pour TableTop
 const TableTop = mongoose.model("TableTop", tableTopSchema);
+
 module.exports = TableTop;
