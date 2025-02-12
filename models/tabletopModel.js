@@ -1,54 +1,30 @@
 const mongoose = require("mongoose");
 
-// Définir un schéma pour les notes du Game Master
-const gameMasterNotesSchema = new mongoose.Schema({
-  notes: { type: String, default: "" }, // Par exemple, une propriété 'notes' de type String
-  // Ajoutez d'autres propriétés si nécessaire pour vos notes
-});
-
-// Définir le schéma des joueurs
+// Définition du schéma des joueurs
 const playerSchema = new mongoose.Schema({
-  playerId: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
-  playerName: String,
-  selectedCharacter: { type: mongoose.Schema.Types.ObjectId, ref: 'Character' },
-  isGameMaster: { type: Boolean, default: false },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true }, // ID réel du joueur
+  playerName: { type: String, required: true }, // Nom du joueur
+  selectedCharacter: { type: mongoose.Schema.Types.ObjectId, ref: "Character", default: null }, // Personnage sélectionné
+  isGameMaster: { type: Boolean, default: false }, // Est-ce le MJ ?
 });
 
-// Définir le schéma des tables
+// Définition du schéma des tables
 const tableTopSchema = new mongoose.Schema({
-  name: {
-    type: String,
-    required: true,
-    unique: true,
-  },
-  password: {
-    type: String,
-    required: true,
-  },
-  game : {
-    type: String,
-    required: true,
-  },
-  gameMaster: {
-    type: mongoose.Schema.Types.ObjectId,
-    ref: "User",
-    required: true,
-    immutable: true,
-  },
-  gameMasterName: {
-    type: String,
-    required: true,
-  },
-  players: [playerSchema],
+  name: { type: String, required: true, unique: true }, // Nom de la table
+  password: { type: String, required: true }, // Mot de passe sécurisé (haché)
+  game: { type: String, required: true }, // Nom du jeu
+  gameMaster: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true, immutable: true }, // ID du MJ
+  gameMasterName: { type: String, required: true }, // Nom du MJ
+  players: [playerSchema], // Liste des joueurs
+  bannedPlayers: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }], // Liste des joueurs bannis
   gameMasterNotes: {
-    type: gameMasterNotesSchema, // Référence au schéma des notes du game master
-    default: {}, // Valeur par défaut vide
-  },
+    characters: { type: String, default: "" },
+    quest: { type: String, default: "" },
+    other: { type: String, default: "" },
+    items: { type: String, default: "" }
+  }
 });
 
-
-
-// Créer le modèle pour TableTop
 const TableTop = mongoose.model("TableTop", tableTopSchema);
 
 module.exports = TableTop;

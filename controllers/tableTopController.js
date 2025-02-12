@@ -2,7 +2,7 @@ const TableTop = require('../models/tabletopModel');
 const User = require("../models/userModel");
 const bcrypt = require('bcrypt');
 
-// Créer une nouvelle table
+// 📌 Créer une nouvelle table
 exports.tableCreate = async (req, res) => {
   const { name, password, game, gameMaster, gameMasterName } = req.body;
 
@@ -13,14 +13,15 @@ exports.tableCreate = async (req, res) => {
   try {
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Création de la table et assignation de isGameMaster: true au créateur
+    // Création de la table avec le MJ bien défini
     const newTable = await TableTop.create({
       name,
       password: hashedPassword,
       game,
       gameMaster,
       gameMasterName,
-      players: [{ playerId: gameMaster, playerName: gameMasterName, isGameMaster: true }],
+      players: [{ userId: gameMaster, playerName: gameMasterName, isGameMaster: true }],
+      bannedPlayers: [],
     });
 
     res.status(201).json({
@@ -33,13 +34,12 @@ exports.tableCreate = async (req, res) => {
   }
 };
 
-
-// Récupérer toutes les tables avec les joueurs
+// 📌 Récupérer toutes les tables avec les joueurs
 exports.getTables = async (req, res) => {
   try {
-    const tables = await TableTop.find({}, "name game players") // On récupère aussi la propriété players
-      .populate('players.playerId', 'playerName selectedCharacter') // On peuple les players avec leurs infos (par exemple playerName et selectedCharacter)
-      .exec();  // Exécution de la requête
+    const tables = await TableTop.find({}, "name game players")
+      .populate('players.userId', 'playerName selectedCharacter')
+      .exec();
 
     res.json({ tables });
   } catch (err) {
@@ -48,17 +48,14 @@ exports.getTables = async (req, res) => {
   }
 };
 
-
-
-// Récupérer une table par ID
+// 📌 Récupérer une table par ID
 exports.getTableById = async (req, res) => {
   const tableId = req.params.id;
-  
+
   try {
     const table = await TableTop.findById(tableId);
-    if (!table) {
-      return res.status(404).json({ message: 'Table non trouvée' });
-    }
+    if (!table) return res.status(404).json({ message: 'Table non trouvée' });
+
     res.json(table);
   } catch (error) {
     console.error("Erreur lors de la récupération de la table", error);
@@ -66,24 +63,17 @@ exports.getTableById = async (req, res) => {
   }
 };
 
-// Vérification du mot de passe
+// 📌 Vérification du mot de passe
 exports.verifyPassword = async (req, res) => {
   const { password } = req.body;
   const tableId = req.params.id;
 
-  console.log("Table ID reçu :", tableId);  // Ajoutez cette ligne pour vérifier l'ID
-
   try {
     const table = await TableTop.findById(tableId);
-    if (!table) {
-      return res.status(404).json({ message: "Table non trouvée" });
-    }
+    if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
     const match = await bcrypt.compare(password, table.password);
-    if (!match) {
-      res.status(400).json({ message: "Mot de passe incorrect" });
-      return;
-    }
+    if (!match) return res.status(400).json({ message: "Mot de passe incorrect" });
 
     res.status(200).json({ message: "Mot de passe vérifié" });
   } catch (error) {
@@ -92,30 +82,29 @@ exports.verifyPassword = async (req, res) => {
   }
 };
 
-// Ajouter un joueur
+// 📌 Ajouter un joueur à une table
 exports.addPlayer = async (req, res) => {
   const { tableId } = req.params;
-  const { playerId, playerName, selectedCharacter } = req.body;
+  const { userId, playerName, selectedCharacter } = req.body;
 
   try {
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table introuvable" });
 
-    // Vérifier si le joueur est déjà dans la table
-    const isAlreadyInTable = table.players.some(
-      (player) => player.playerId.toString() === playerId
-    );
+    // Vérifier si le joueur est banni
+    if (table.bannedPlayers.includes(userId)) {
+      return res.status(403).json({ message: "Ce joueur est banni de la table" });
+    }
 
+    // Vérifier si le joueur est déjà dans la table
+    const isAlreadyInTable = table.players.some(player => player.userId.toString() === userId);
     if (!isAlreadyInTable) {
-      // Ajouter le joueur à la liste des joueurs de la table
-      table.players.push({ playerId, playerName, selectedCharacter });
+      table.players.push({ userId, playerName, selectedCharacter });
       await table.save();
     }
 
-    // Ajouter l'_id de la table au profil du joueur
-    await User.findByIdAndUpdate(playerId, {
-      $addToSet: { tablesJoined: tableId } // Évite les doublons
-    });
+    // Ajouter la table à `tablesJoined` du joueur
+    await User.findByIdAndUpdate(userId, { $addToSet: { tablesJoined: tableId } });
 
     res.status(200).json({ message: "Joueur ajouté à la table" });
   } catch (error) {
@@ -124,16 +113,13 @@ exports.addPlayer = async (req, res) => {
   }
 };
 
-
-//Supprime une table
+// 📌 Supprimer une table
 exports.deleteTable = async (req, res) => {
   const tableId = req.params.id;
 
   try {
     const table = await TableTop.findById(tableId);
-    if (!table) {
-      return res.status(404).json({ message: "Table non trouvée" });
-    }
+    if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
     await table.deleteOne();
     res.status(200).json({ message: "Table supprimée avec succès" });
@@ -143,17 +129,15 @@ exports.deleteTable = async (req, res) => {
   }
 };
 
+// 📌 Mettre à jour les notes du MJ
 exports.updateNotes = async (req, res) => {
   const { id } = req.params;
   const { characters, quest, other, items } = req.body;
 
   try {
     const table = await TableTop.findById(id);
-    if (!table) {
-      return res.status(404).json({ message: "Table introuvable" });
-    }
+    if (!table) return res.status(404).json({ message: "Table introuvable" });
 
-    // Mise à jour des notes
     table.gameMasterNotes = { characters, quest, other, items };
     await table.save();
 
@@ -163,46 +147,65 @@ exports.updateNotes = async (req, res) => {
   }
 };
 
-// Récupérer les joueurs d'une table
+// 📌 Récupérer les joueurs d'une table
 exports.getPlayersFromTable = async (req, res) => {
   const tableId = req.params.id;
-  console.log("Requête reçue pour la table ID :", tableId);
 
   try {
     const table = await TableTop.findById(tableId)
-    .populate({
-      path: 'players.selectedCharacter',
-      select: '-__v'
-    });
-    
+      .populate("players.selectedCharacter") // 🔥 Assure que `selectedCharacter` contient les détails
+      .exec();
 
-    if (!table) {
-      return res.status(404).json({ message: 'Table non trouvée' });
-    }
+    if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
-    console.log("Joueurs de la table avec personnages peuplés :", table.players);
+    console.log("📌 Liste des joueurs récupérée depuis MongoDB :", table.players);
+
     res.status(200).json(table.players);
   } catch (error) {
-    console.error("Erreur serveur", error);
+    console.error("❌ Erreur serveur lors de la récupération des joueurs :", error);
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
 
-// Supprimer un joueur d'une table
-exports.removePlayerFromTable = async (req, res) => {
-  console.log(`Suppression du joueur avec l'ID: ${playerId}, Table ID: ${tableId}`);
-  try {
-    const response = await fetch(`${API_URL}/api/tabletop/${tableId}/removePlayer/${playerId}`, {
-      method: 'DELETE',
-    });
 
-    if (!response.ok) {
-      console.error(`Erreur lors de la suppression du joueur, statut: ${response.status}`);
-      throw new Error(`Erreur lors de la suppression du joueur, statut: ${response.status}`);
+
+// 📌 Supprimer un joueur d'une table
+exports.removePlayerFromTable = async (req, res) => {
+  const { tableId, userId } = req.params;
+  console.log(`🗑️ BACKEND: Tentative de suppression du joueur ${userId} de la table ${tableId}`);
+
+  try {
+    const table = await TableTop.findById(tableId);
+    if (!table) return res.status(404).json({ message: "Table non trouvée" });
+
+    console.log("👀 Liste des joueurs AVANT suppression :", table.players);
+
+    // 🔹 Vérification et correction de l'ID utilisateur
+    const playerIndex = table.players.findIndex(
+      (player) => player.userId.toString() === userId || player._id.toString() === userId
+    );
+
+    if (playerIndex === -1) {
+      console.log(`❌ Joueur ${userId} introuvable dans la table !`);
+      return res.status(404).json({ message: "Joueur non trouvé dans cette table" });
     }
 
-    console.log(`Joueur ${playerId} supprimé avec succès.`);
+    // ✅ Supprimer le joueur et l'ajouter à la liste des bannis
+    const removedPlayer = table.players.splice(playerIndex, 1)[0];
+    table.bannedPlayers.push(removedPlayer.userId.toString());
+
+    // ✅ Supprimer la table de `tablesJoined` du joueur
+    await User.findByIdAndUpdate(removedPlayer.userId, { $pull: { tablesJoined: tableId } });
+
+    await table.save();
+    console.log(`✅ Joueur ${removedPlayer.userId} supprimé et banni de la table ${tableId}`);
+    res.status(200).json({ message: "Joueur supprimé avec succès" });
+
   } catch (error) {
-    console.error('Erreur lors de la suppression du joueur', error);
+    console.error("❌ Erreur lors de la suppression du joueur :", error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
-}
+};
+
+
+

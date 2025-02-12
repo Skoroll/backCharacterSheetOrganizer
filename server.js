@@ -62,7 +62,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/characters", characterRoutes);
 app.use("/api/tabletop", tableTopRoutes);
 app.use("/api/chat", chatRoutes);
-
+app.use("/api/chat", chatRoutes); 
 // Démarrage du serveur sur le bon port
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
