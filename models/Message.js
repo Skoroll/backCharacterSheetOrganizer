@@ -1,10 +1,10 @@
-// models/Message.js
 const mongoose = require("mongoose");
 
 const messageSchema = new mongoose.Schema({
-  pseudo: { type: String, required: true },
   message: { type: String, required: true },
-  characterName: { type: String, required: true }, // Champ pour le nom du personnage
+  characterName: { type: String, required: true }, // Nom du personnage est obligatoire
+  senderName: { type: String, required: false }, // Le pseudo du joueur est optionnel
+  tableId: { type: String, required: true }, // Ajouter tableId pour associer les messages à une table
   createdAt: { type: Date, default: Date.now, expires: '2d' }, // Expiration automatique après 2 jours
 });
 
