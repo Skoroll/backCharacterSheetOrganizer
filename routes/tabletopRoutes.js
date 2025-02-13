@@ -14,5 +14,7 @@ router.delete('/tables/:id', protect, tableController.deleteTable);
 router.put('/tables/:id/notes', protect, tableController.updateNotes);
 router.get('/tables/:id/players', tableController.getPlayersFromTable);
 router.delete('/tables/:tableId/removePlayer/:userId', tableController.removePlayerFromTable);
+router.delete('/tables/:tableId/removeCharacter/:userId', tableController.removePlayerCharacter);
+
 
 module.exports = router;

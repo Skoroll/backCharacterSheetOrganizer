@@ -207,5 +207,27 @@ exports.removePlayerFromTable = async (req, res) => {
   }
 };
 
+// 📌 Supprimer le personnage d'un joueur (mais pas le joueur)
+exports.removePlayerCharacter = async (req, res) => {
+  const { tableId, userId } = req.params;
+
+  try {
+    const table = await TableTop.findById(tableId);
+    if (!table) return res.status(404).json({ message: "Table non trouvée" });
+
+    // Trouver le joueur dans la table
+    const player = table.players.find((p) => p.userId.toString() === userId);
+    if (!player) return res.status(404).json({ message: "Joueur non trouvé" });
+
+    // Supprimer son personnage sans le bannir
+    player.selectedCharacter = null;
+    await table.save();
+
+    res.status(200).json({ message: "Personnage supprimé avec succès", player });
+  } catch (error) {
+    console.error("❌ Erreur lors de la suppression du personnage :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
 
 

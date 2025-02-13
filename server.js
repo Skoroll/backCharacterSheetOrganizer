@@ -61,6 +61,20 @@ app.use(
   })
 );
 
+// Configuration de CORS
+app.use((req, res, next) => {
+  res.header("Access-Control-Allow-Origin", "http://localhost:5173"); // Autorise le frontend
+  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
+  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.header("Access-Control-Allow-Credentials", "true"); // Autorise les cookies et tokens d'authentification
+  if (req.method === "OPTIONS") {
+    return res.status(200).end(); // Répondre aux requêtes préflight
+  }
+  next();
+});
+
+
+
 // Middleware global
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
