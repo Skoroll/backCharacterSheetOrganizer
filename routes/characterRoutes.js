@@ -30,13 +30,13 @@ const upload = multer({ storage });
 
 // 🔹 Route pour récupérer uniquement les personnages de l'utilisateur connecté
 router.get("/user", protect, (req, res, next) => {
-  console.log("🔹 Requête reçue sur /api/characters/user");
+
   next();
 }, getUserCharacters);
 
 // 🔹 Route pour récupérer tous les personnages
 router.get("/", (req, res, next) => {
-  console.log("🔹 Requête reçue sur /api/characters");
+
   next();
 }, getAllCharacters);
 

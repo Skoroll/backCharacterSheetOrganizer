@@ -3,12 +3,11 @@ import Character from "../models/characterModel.js";
 // 📌 Créer un personnage avec image
 export const createCharacter = async (req, res) => {
   try {
-      console.log("🔹 Requête reçue:", req.body);
 
       // Extraction des données
       const { 
           name, age, className, strength, dexterity, endurance, intelligence, charisma, 
-          pointsOfLife, injuries, protection, background, gold, origin, weapons, skills, inventory 
+          pointsOfLife, injuries, protection, background,pros, cons, gold, origin, weapons, skills, inventory 
       } = req.body;
 
       // Vérification des champs obligatoires
@@ -48,6 +47,8 @@ export const createCharacter = async (req, res) => {
           injuries,
           protection,
           background,
+          pros,
+          cons,
           gold,
           origin,
           image: imagePath,

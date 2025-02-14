@@ -44,27 +44,26 @@ exports.register = async (req, res) => {
 
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
-  console.log("Requête reçue :", req.body);
-  const { email, password } = req.body;
-  if (!email || !password) {
-    console.log("Données manquantes :", { email, password });
-    return res.status(400).json({ message: "Les champs 'email' et 'password' sont obligatoires." });
+  const { name, password } = req.body;
+  if (!name || !password) {
+    console.log("Données manquantes :", { name, password });
+    return res.status(400).json({ message: "Les champs 'name' et 'password' sont obligatoires." });
   }
 
   try {
     // Récupération de l'utilisateur en base de données
-    const user = await User.findOne({ email });
+    const user = await User.findOne({ name });
 
     if (!user) {
-      console.log("Utilisateur non trouvé :", email);
-      return res.status(401).json({ message: "Email ou mot de passe incorrect." });
+      console.log("Utilisateur non trouvé :", name);
+      return res.status(401).json({ message: "Nom ou mot de passe incorrect." });
     }
 
     const match = await bcrypt.compare(password.trim(), user.password);
     console.log("Mot de passe correct :", match);
     if (!match) {
       console.log("Mot de passe incorrect :", password, "Attendu :", user.password);
-      return res.status(401).json({ message: "Email ou mot de passe incorrect." });
+      return res.status(401).json({ message: "Nom ou mot de passe incorrect." });
     }
 
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });

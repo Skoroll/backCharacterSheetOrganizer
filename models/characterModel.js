@@ -14,6 +14,8 @@ const characterSchema = new mongoose.Schema({
   injuries: { type: String, required: true },
   protection: { type: String, required: true },
   background: { type: String, required: true },
+  cons: { type: String, required: true },
+  pros: { type: String, required: true },
   origin: { type: String, required: true },
 
   // Armes : Entrées manuelles par l'utilisateur
