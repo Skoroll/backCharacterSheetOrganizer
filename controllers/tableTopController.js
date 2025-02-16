@@ -158,7 +158,6 @@ exports.getPlayersFromTable = async (req, res) => {
 
     if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
-    console.log("📌 Liste des joueurs récupérée depuis MongoDB :", table.players);
 
     res.status(200).json(table.players);
   } catch (error) {
@@ -178,7 +177,6 @@ exports.removePlayerFromTable = async (req, res) => {
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
-    console.log("👀 Liste des joueurs AVANT suppression :", table.players);
 
     // 🔹 Vérification et correction de l'ID utilisateur
     const playerIndex = table.players.findIndex(
@@ -230,4 +228,36 @@ exports.removePlayerCharacter = async (req, res) => {
   }
 };
 
+exports.selectCharacterForPlayer = async (req, res) => {
+  try {
+    const { tableId, playerId, characterId } = req.body;
 
+    const table = await TableTop.findById(tableId);
+    if (!table) {
+      return res.status(404).json({ message: "Table introuvable" });
+    }
+
+    const character = await Character.findById(characterId);
+    if (!character) {
+      return res.status(404).json({ message: "Personnage introuvable" });
+    }
+
+    const player = table.players.find((p) => p.userId.toString() === playerId);
+    if (!player) {
+      return res.status(403).json({ message: "Le joueur ne fait pas partie de cette table" });
+    }
+
+    // ✅ Assigne `tableId` au personnage
+    character.tableId = tableId;
+    await character.save();
+
+    // ✅ Met à jour le joueur
+    player.selectedCharacter = characterId;
+    await table.save();
+
+    res.json({ message: "Personnage sélectionné avec succès", table });
+  } catch (error) {
+    console.error("❌ Erreur sélection personnage :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

@@ -9,7 +9,8 @@ const {
   updateCharacter,
   deleteCharacter,
   getUserCharacters,
-  getCharactersByUser
+  getCharactersByUser,
+  updateHealth
 } = require('../controllers/characterController');
 
 
@@ -43,7 +44,7 @@ router.get("/", (req, res, next) => {
 // 🔹 Route pour créer un personnage avec upload de fichier
 router.post("/", protect, upload.single("image"), createCharacter);
 
-
+router.patch("/:id/update-health", updateHealth);
 
 // 🔹 Route pour récupérer un personnage par son ID
 router.get("/:id", getCharacterById);
@@ -53,10 +54,8 @@ router.put("/:id", updateCharacter);
 
 router.get("/characters", protect, getCharactersByUser);
 
+
 // 🔹 Route pour supprimer un personnage
 router.delete("/:id", deleteCharacter);
-console.log("getUserCharacters:", getUserCharacters);
-console.log("createCharacter:", createCharacter);
-console.log("getCharacterById:", getCharacterById);
 
 module.exports = router;

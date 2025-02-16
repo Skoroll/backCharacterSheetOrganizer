@@ -48,5 +48,43 @@ const postMessage = async (req, res) => {
     }
   };
   
+exports.updateHealth = async (req, res) => {
+  try {
+    const { pointsOfLife } = req.body;
+    const character = await Character.findByIdAndUpdate(
+      req.params.id,
+      { pointsOfLife },
+      { new: true }
+    );
 
+    if (!character) {
+      return res.status(404).json({ message: "Personnage non trouvé" });
+    }
+
+    // 📢 Notifier tous les joueurs via WebSocket
+    const io = req.app.get("io");
+    io.to(`table-${character.tableId}`).emit("updateHealth", {
+      characterId: character._id,
+      pointsOfLife: character.pointsOfLife
+    });
+
+    // 📝 Enregistrer l'événement dans le chat
+    const systemMessage = new Message({
+      message: `${character.name} change ses points de vie en : ${character.pointsOfLife}`,
+      characterName: "Système",
+      senderName: "Système",
+      tableId: character.tableId,
+    });
+
+    await systemMessage.save(); // Sauvegarde en base
+
+    // 📢 Envoyer aussi via WebSocket aux autres joueurs
+    io.to(`table-${character.tableId}`).emit("newMessage", systemMessage);
+
+    res.json(character);
+  } catch (error) {
+    console.error("❌ Erreur mise à jour des PV :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
 module.exports = { getMessages, postMessage };

@@ -1,5 +1,6 @@
 import Character from "../models/characterModel.js";
-
+import TableTop from "../models/tabletopModel.js";
+import Message from "../models/Message.js";
 // 📌 Créer un personnage avec image
 export const createCharacter = async (req, res) => {
   try {
@@ -171,4 +172,65 @@ export const getCharactersByUser = async (req, res) => {
   }
 };
 
+export const updateHealth = async (req, res) => {
+  try {
+    console.log("📥 Requête reçue pour updateHealth :", req.body);
 
+    const { pointsOfLife } = req.body;
+    if (pointsOfLife === undefined) {
+      return res.status(400).json({ message: "Le champ pointsOfLife est requis" });
+    }
+
+    // 🔍 Récupérer le personnage
+    const character = await Character.findById(req.params.id);
+    if (!character) {
+      return res.status(404).json({ message: "Personnage non trouvé" });
+    }
+
+    // 🚨 Vérifier si le personnage a un `tableId`
+    let tableId = character.tableId;
+    if (!tableId) {
+      console.warn(`⚠️ Le personnage ${character._id} n'a pas de tableId défini ! Recherche en cours...`);
+
+      // 🔍 Trouver la table contenant ce personnage
+      const table = await TableTop.findOne({ "players.selectedCharacter": character._id });
+
+      if (table) {
+        console.log(`✅ Table trouvée : ${table._id}`);
+        tableId = table._id;
+
+        // 🔹 Mettre à jour le personnage avec la table trouvée
+        character.tableId = tableId;
+        await character.save();
+      } else {
+        console.error(`❌ Impossible de trouver une table associée au personnage ${character._id}`);
+        return res.status(400).json({ message: "Ce personnage n'est pas associé à une table" });
+      }
+    }
+
+    console.log(`🔍 Table ID final du personnage : ${tableId}`);
+
+    // ✅ Mettre à jour les PV
+    character.pointsOfLife = pointsOfLife;
+    await character.save();
+
+    // ✅ Vérifier si l'instance de socket.io est bien récupérée
+    const io = req.app.get("io");
+    if (!io) {
+      console.error("❌ ERREUR : io non trouvé dans req.app !");
+      return res.status(500).json({ message: "Erreur serveur : io non défini" });
+    }
+
+    // ✅ Émettre l'événement à la bonne salle "table-{tableId}"
+    console.log(`📡 Emission de "updateHealth" à table-${tableId}`);
+    io.to(`table-${tableId}`).emit("updateHealth", {
+      characterId: character._id,
+      pointsOfLife: character.pointsOfLife,
+    });
+
+    res.json(character);
+  } catch (error) {
+    console.error("❌ Erreur mise à jour des PV :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

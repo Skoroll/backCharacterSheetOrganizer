@@ -22,60 +22,64 @@ mongoose
     useNewUrlParser: true,
     useUnifiedTopology: true,
   })
-  .then(() => console.log("MongoDB connected"))
-  .catch((err) => console.error("MongoDB connection error:", err));
+  .then(() => console.log("✅ MongoDB connected"))
+  .catch((err) => console.error("❌ MongoDB connection error:", err));
 
 // Initialisation de Socket.io avec le serveur HTTP
 const io = require("socket.io")(server, {
   cors: {
-    origin: "*", // Autoriser tous les domaines (en production, tu devrais spécifier ton domaine frontend ici)
+    origin: "http://localhost:5173", // Modifier pour ton domaine en production
   },
 });
 
+// ✅ Définir l'instance de io globalement pour l'utiliser dans les contrôleurs
+app.set("io", io);
+
 io.on("connection", (socket) => {
-  console.log("Un utilisateur est connecté");
+  
 
   // L'utilisateur rejoint une salle correspondant à la table
   socket.on("joinTable", (tableId) => {
-    socket.join(tableId); // L'utilisateur rejoint la salle correspondant à tableId
-    console.log(`Utilisateur rejoint la table ${tableId}`);
+    socket.join(`table-${tableId}`);
   });
 
-  // Lorsqu'un message est envoyé, on le diffuse à tous les utilisateurs dans la même salle (table)
+  // Diffusion des messages de chat
   socket.on("newMessage", (message) => {
-    io.to(message.tableId).emit("newMessage", message); // Diffuse le message à tous les utilisateurs de la même table
+    console.log("📩 Message reçu et diffusé :", message);
+    io.to(`table-${message.tableId}`).emit("newMessage", message);
   });
 
-  // Écouter l'événement de déconnexion
+  // Mise à jour des PV avec message dans le chat
+  socket.on("updateHealth", ({ characterId, pointsOfLife, tableId, characterName }) => {
+    console.log("⚡ Mise à jour PV reçue :", characterId, pointsOfLife);
+    io.to(`table-${tableId}`).emit("updateHealth", { characterId, pointsOfLife });
+
+    // 🚀 Envoyer un message au chat
+    const systemMessage = {
+      message: `${characterName} change ses points de vie en : ${pointsOfLife}`,
+      characterName: "Système",
+      senderName: "Système",
+      tableId: tableId,
+    };
+    console.log("💬 Envoi message au chat :", systemMessage);
+    io.to(`table-${tableId}`).emit("newMessage", systemMessage);
+  });
+
+  // Gestion de la déconnexion
   socket.on("disconnect", () => {
-    console.log("Utilisateur déconnecté");
   });
 });
+
 
 // Configuration de CORS
 app.use(
   cors({
-    origin: "http://localhost:5173", // Remplacer par l'URL de ton frontend en production
-    methods: ["GET", "POST", "PUT", "DELETE"],
+    origin: "http://localhost:5173", // À remplacer par ton URL frontend en production
+    methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   })
 );
 
-// Configuration de CORS
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "http://localhost:5173"); // Autorise le frontend
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, OPTIONS");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true"); // Autorise les cookies et tokens d'authentification
-  if (req.method === "OPTIONS") {
-    return res.status(200).end(); // Répondre aux requêtes préflight
-  }
-  next();
-});
-
-
-
-// Middleware global
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
 
@@ -88,5 +92,5 @@ app.use("/api/chat", chatRoutes);
 // Démarrage du serveur
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log(`🚀 Server running on port ${PORT}`);
 });

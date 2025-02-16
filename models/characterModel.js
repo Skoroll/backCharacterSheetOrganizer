@@ -40,6 +40,9 @@ const characterSchema = new mongoose.Schema({
   
   image: { type: String, required: false },
 
+  // 🔥 Lien vers la table de jeu
+  tableId: { type: mongoose.Schema.Types.ObjectId, ref: "TableTop", required: false },
+
   // Lien vers l'utilisateur
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });

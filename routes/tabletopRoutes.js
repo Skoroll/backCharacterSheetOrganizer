@@ -1,5 +1,5 @@
 const express = require('express');
-const tableController = require('../controllers/tableTopController'); // Correction de l'importation
+const tableController = require('../controllers/tableTopController'); 
 const { protect } = require("../middlewares/authMiddleware");
 
 
@@ -15,6 +15,6 @@ router.put('/tables/:id/notes', protect, tableController.updateNotes);
 router.get('/tables/:id/players', tableController.getPlayersFromTable);
 router.delete('/tables/:tableId/removePlayer/:userId', tableController.removePlayerFromTable);
 router.delete('/tables/:tableId/removeCharacter/:userId', tableController.removePlayerCharacter);
-
+router.post("/selectCharacter", tableController.selectCharacterForPlayer);
 
 module.exports = router;
