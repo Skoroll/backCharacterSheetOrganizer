@@ -232,6 +232,10 @@ exports.selectCharacterForPlayer = async (req, res) => {
   try {
     const { tableId, playerId, characterId } = req.body;
 
+    if (!tableId || !playerId || !characterId) {
+      return res.status(400).json({ message: "Tous les champs (tableId, playerId, characterId) sont requis" });
+    }
+
     const table = await TableTop.findById(tableId);
     if (!table) {
       return res.status(404).json({ message: "Table introuvable" });
@@ -247,13 +251,22 @@ exports.selectCharacterForPlayer = async (req, res) => {
       return res.status(403).json({ message: "Le joueur ne fait pas partie de cette table" });
     }
 
-    // ✅ Assigne `tableId` au personnage
-    character.tableId = tableId;
-    await character.save();
+    // ✅ S'assurer que tableIds est bien défini avant de l'utiliser
+    if (!Array.isArray(character.tableIds)) {
+      character.tableIds = [];
+    }
 
-    // ✅ Met à jour le joueur
-    player.selectedCharacter = characterId;
-    await table.save();
+    // ✅ Ajouter la table seulement si elle n'est pas déjà présente
+    if (!character.tableIds.includes(tableId)) {
+      character.tableIds.push(tableId);
+      await character.save();
+    }
+
+    // ✅ Met à jour le joueur seulement si `selectedCharacter` change
+    if (player.selectedCharacter !== characterId) {
+      player.selectedCharacter = characterId;
+      await table.save();
+    }
 
     res.json({ message: "Personnage sélectionné avec succès", table });
   } catch (error) {
@@ -261,3 +274,4 @@ exports.selectCharacterForPlayer = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+

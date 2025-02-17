@@ -9,6 +9,7 @@ const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const characterRoutes = require("./routes/characterRoutes");
 const tableTopRoutes = require("./routes/tabletopRoutes");
+const npcRoutes = require("./routes/npcRoutes");
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -88,6 +89,7 @@ app.use("/api/users", userRoutes);
 app.use("/api/characters", characterRoutes);
 app.use("/api/tabletop", tableTopRoutes);
 app.use("/api/chat", chatRoutes);
+app.use("/api", npcRoutes);
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 8080;

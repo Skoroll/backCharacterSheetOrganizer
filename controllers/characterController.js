@@ -176,9 +176,14 @@ export const updateHealth = async (req, res) => {
   try {
     console.log("📥 Requête reçue pour updateHealth :", req.body);
 
-    const { pointsOfLife } = req.body;
+    const { pointsOfLife, tableId } = req.body; // Ajout de `tableId`
+    
     if (pointsOfLife === undefined) {
       return res.status(400).json({ message: "Le champ pointsOfLife est requis" });
+    }
+
+    if (!tableId) {
+      return res.status(400).json({ message: "Le champ tableId est requis" });
     }
 
     // 🔍 Récupérer le personnage
@@ -187,28 +192,28 @@ export const updateHealth = async (req, res) => {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
 
-    // 🚨 Vérifier si le personnage a un `tableId`
-    let tableId = character.tableId;
-    if (!tableId) {
-      console.warn(`⚠️ Le personnage ${character._id} n'a pas de tableId défini ! Recherche en cours...`);
+    // ✅ Vérifier si le personnage appartient bien à cette table
+    if (!character.tableIds.includes(tableId)) {
+      console.warn(`⚠️ Le personnage ${character._id} ne fait pas partie de cette table. Ajout en cours...`);
 
       // 🔍 Trouver la table contenant ce personnage
       const table = await TableTop.findOne({ "players.selectedCharacter": character._id });
 
       if (table) {
         console.log(`✅ Table trouvée : ${table._id}`);
-        tableId = table._id;
 
-        // 🔹 Mettre à jour le personnage avec la table trouvée
-        character.tableId = tableId;
-        await character.save();
+        // 🔹 Ajouter cette table à la liste des tables du personnage si elle n'existe pas
+        if (!character.tableIds.includes(table._id)) {
+          character.tableIds.push(table._id);
+          await character.save();
+        }
       } else {
         console.error(`❌ Impossible de trouver une table associée au personnage ${character._id}`);
         return res.status(400).json({ message: "Ce personnage n'est pas associé à une table" });
       }
     }
 
-    console.log(`🔍 Table ID final du personnage : ${tableId}`);
+    console.log(`🔍 Table ID final utilisé : ${tableId}`);
 
     // ✅ Mettre à jour les PV
     character.pointsOfLife = pointsOfLife;
@@ -234,3 +239,4 @@ export const updateHealth = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
