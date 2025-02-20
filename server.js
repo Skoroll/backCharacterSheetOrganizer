@@ -10,6 +10,7 @@ const chatRoutes = require("./routes/chatRoutes");
 const characterRoutes = require("./routes/characterRoutes");
 const tableTopRoutes = require("./routes/tabletopRoutes");
 const npcRoutes = require("./routes/npcRoutes");
+const gmFilesRoutes = require("./routes/gmFilesRoutes");
 
 // Chargement des variables d'environnement
 dotenv.config();
@@ -37,17 +38,54 @@ const io = require("socket.io")(server, {
 app.set("io", io);
 
 io.on("connection", (socket) => {
-  
+  console.log("🟢 Un utilisateur s'est connecté via WebSocket");
+
+  socket.onAny((event, ...args) => {
+    console.log(`📡 [SERVER] Reçu un événement : ${event}`, args);
+  });
 
   // L'utilisateur rejoint une salle correspondant à la table
   socket.on("joinTable", (tableId) => {
     socket.join(`table-${tableId}`);
+    console.log(`👤 [SERVER] Un utilisateur a rejoint la table ${tableId}`);
   });
 
   // Diffusion des messages de chat
   socket.on("newMessage", (message) => {
     console.log("📩 Message reçu et diffusé :", message);
     io.to(`table-${message.tableId}`).emit("newMessage", message);
+  });
+
+  socket.on("sendMedia", ({ tableId, mediaUrl }) => {
+    console.log(`📥 [SERVER] Reçu sendMedia pour la table ${tableId}`);
+    console.log(`🎬 [SERVER] URL du média reçu : ${mediaUrl}`);
+
+    if (!tableId) {
+      console.error("❌ [SERVER] ERREUR: tableId est undefined !");
+      return;
+    }
+
+    io.to(`table-${tableId}`).emit("newMedia", mediaUrl);
+    console.log(`📡 [SERVER] Émission de newMedia avec URL : ${mediaUrl}`);
+  });
+
+  //Affiche en direct les textes partagé sur les tables
+  socket.on("sendText", ({ tableId, textContent }) => {
+    console.log(`📥 [SERVER] Reçu sendText pour la table ${tableId}`);
+    console.log(`📝 [SERVER] Texte reçu : ${textContent}`);
+
+    if (!tableId) {
+      console.error("❌ [SERVER] ERREUR: tableId est undefined !");
+      return;
+    }
+
+    io.to(`table-${tableId}`).emit("newText", { textContent });
+    console.log(`📡 [SERVER] Émission de newText : ${textContent}`);
+  });
+
+  socket.on("removeMedia", ({ tableId }) => {
+    console.log(`🗑️ Suppression du média affiché pour la table ${tableId}`);
+    io.to(`table-${tableId}`).emit("removeMedia");
   });
 
   // Mise à jour des PV avec message dans le chat
@@ -68,6 +106,7 @@ io.on("connection", (socket) => {
 
   // Gestion de la déconnexion
   socket.on("disconnect", () => {
+    console.log("🔴 Un utilisateur s'est déconnecté");
   });
 });
 
@@ -83,6 +122,7 @@ app.use(
 
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
+app.use("/gmAssets", express.static(path.join(__dirname, "gmAssets")));
 
 // Routes
 app.use("/api/users", userRoutes);
@@ -90,6 +130,7 @@ app.use("/api/characters", characterRoutes);
 app.use("/api/tabletop", tableTopRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api", npcRoutes);
+app.use("/api/gmfiles", gmFilesRoutes);
 
 // Démarrage du serveur
 const PORT = process.env.PORT || 8080;
