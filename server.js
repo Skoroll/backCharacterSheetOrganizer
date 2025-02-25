@@ -53,8 +53,10 @@ io.on("connection", (socket) => {
   // Diffusion des messages de chat
   socket.on("newMessage", (message) => {
     console.log("📩 Message reçu et diffusé :", message);
+    // Envoie le message à tous les clients dans la salle, y compris l'émetteur
     io.to(`table-${message.tableId}`).emit("newMessage", message);
   });
+  
 
   socket.on("sendMedia", ({ tableId, mediaUrl }) => {
     console.log(`📥 [SERVER] Reçu sendMedia pour la table ${tableId}`);
@@ -108,6 +110,11 @@ io.on("connection", (socket) => {
   socket.on("disconnect", () => {
     console.log("🔴 Un utilisateur s'est déconnecté");
   });
+});
+
+app.use((req, res, next) => {
+  console.log(`🔹 Requête reçue : ${req.method} ${req.url}`);
+  next();
 });
 
 

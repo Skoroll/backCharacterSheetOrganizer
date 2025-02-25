@@ -4,77 +4,72 @@ import Message from "../models/Message.js";
 // 📌 Créer un personnage avec image
 export const createCharacter = async (req, res) => {
   try {
+    const {
+      name,
+      age,
+      className,
+      strength,
+      dexterity,
+      endurance,
+      intelligence,
+      charisma,
+      pointsOfLife,
+      gold,
+      injuries,
+      protection,
+      background,
+      pros,
+      cons,
+      origin,
+      baseSkills,
+    } = req.body;
 
-      // Extraction des données
-      const { 
-          name, age, className, strength, dexterity, endurance, intelligence, charisma, 
-          pointsOfLife, injuries, protection, background,pros, cons, gold, origin, weapons, skills, inventory 
-      } = req.body;
+        // 📌 Initialisation des compétences basiques avec `bonusMalus` à 0 si absent
+        const defaultBaseSkills = [
+          { name: "Artisanat", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
+          { name: "Combat rapproché", link1: "strength", link2: "dexterity", bonusMalus: 0 },
+          { name: "Combat à distance", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
+          { name: "Discrétion", link1: "dexterity", link2: "charisma", bonusMalus: 0 },
+          { name: "Réflexe", link1: "dexterity", link2: "intelligence", bonusMalus: 0 }
+        ];
 
-      // Vérification des champs obligatoires
-      if (!name || !age) {
-          return res.status(400).json({ message: "Certains champs obligatoires sont manquants" });
-      }
+    // Conversion des champs qui sont envoyés en JSON
+    const parsedSkills = req.body.skills ? JSON.parse(req.body.skills) : [];
+    const parsedInventory = req.body.inventory ? JSON.parse(req.body.inventory) : [];
+    const parsedBaseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : defaultBaseSkills; // si vous envoyez ce champ aussi
 
-      // Traitement de l'image
-      const imagePath = req.file ? `uploads/${req.file.filename}` : null;
+    // Récupération du chemin de l'image uploadée
+    const imagePath = req.file ? req.file.path : '';
 
-      // 📌 Logs avant parsing
-      console.log("📌 Weapons avant parsing:", weapons);
-      console.log("📌 Skills avant parsing:", skills);
-      console.log("📌 Inventory avant parsing:", inventory);
+    const newCharacter = new Character({
+      name,
+      age,
+      className,
+      image: imagePath,
+      strength,
+      dexterity,
+      endurance,
+      intelligence,
+      charisma,
+      pointsOfLife,
+      gold,
+      injuries,
+      protection,
+      background,
+      pros,
+      cons,
+      origin,
+      baseSkills: parsedBaseSkills,
+      skills: parsedSkills,
+      inventory: parsedInventory,
+      userId: req.user.id,
+    });
 
-      // Parsing des chaînes JSON envoyées par le front
-      const weaponsArr = JSON.parse(weapons || "[]");
-      const skillsArr = JSON.parse(skills || "[]");
-      const inventoryArr = JSON.parse(inventory || "[]");
-
-      // 📌 Logs après parsing
-      console.log("📌 Weapons après parsing:", weaponsArr);
-      console.log("📌 Skills après parsing:", skillsArr);
-      console.log("📌 Inventory après parsing:", inventoryArr);
-
-      // Création du personnage avec les données parsées
-      const newCharacter = new Character({
-          name,
-          age,
-          className,
-          strength,
-          dexterity,
-          endurance,
-          intelligence,
-          charisma,
-          pointsOfLife,
-          injuries,
-          protection,
-          background,
-          pros,
-          cons,
-          gold,
-          origin,
-          image: imagePath,
-          weapons: weaponsArr,   // Stocké directement dans le modèle
-          skills: skillsArr, 
-          inventory: inventoryArr,
-          userId: req.user.id
-      });
-
-      await newCharacter.save();
-
-      // Générer l'URL de l'image
-      const imageUrl = req.file ? `${req.protocol}://${req.get('host')}/${imagePath}` : null;
-
-      res.status(201).json({ 
-        message: "Personnage créé avec succès", 
-        character: { 
-          ...newCharacter._doc, 
-          image: imageUrl  
-        } 
-      });
-
+    await newCharacter.save();
+    res.status(201).json({ message: "Personnage créé avec succès", character: newCharacter });
   } catch (error) {
-      console.error("❌ Erreur lors de la création du personnage:", error);
-      res.status(500).json({ message: "Erreur interne du serveur", error });
+    console.error("❌ Erreur lors de la création du personnage:", error);
+    res.status(500).json({ message: "Erreur interne du serveur" });
   }
 };
 
@@ -105,17 +100,32 @@ export const getAllCharacters = async (req, res) => {
 // 📌 Mettre à jour un personnage
 export const updateCharacter = async (req, res) => {
   try {
+    console.log("🔍 Données reçues par le backend :", req.body);
+
+    const { baseSkills } = req.body;
+
+    const updatedBaseSkills = Array.isArray(baseSkills)
+      ? baseSkills.map(skill => ({
+          ...skill,
+          bonusMalus: skill.bonusMalus || 0, // ✅ Toujours inclure `bonusMalus`
+        }))
+      : [];
+
     const updatedCharacter = await Character.findByIdAndUpdate(
       req.params.id,
-      req.body,
+      { ...req.body, baseSkills: updatedBaseSkills },
       { new: true, runValidators: true }
     );
+
     if (!updatedCharacter) {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
+
     res.status(200).json(updatedCharacter);
+
   } catch (error) {
-    res.status(400).json({ message: error.message });
+    console.error("❌ Erreur mise à jour personnage:", error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
@@ -131,7 +141,6 @@ export const deleteCharacter = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
 
 // 📌 Récupérer les personnages d'un utilisateur spécifique (authentifié)
 export const getUserCharacters = async (req, res) => {
@@ -150,8 +159,6 @@ export const getUserCharacters = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
-
-
 
 export const getCharactersByUser = async (req, res) => {
   try {

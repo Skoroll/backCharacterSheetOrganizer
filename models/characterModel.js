@@ -18,32 +18,35 @@ const characterSchema = new mongoose.Schema({
   pros: { type: String, required: true },
   origin: { type: String, required: true },
 
-  // Armes : Entrées manuelles par l'utilisateur
-  weapons: [{
-    name: { type: String, required: false },
-    damage: { type: String, required: false }
+  // 🔥 Ajout des compétences basiques pour stockage
+  baseSkills: [{
+    name: { type: String, required: true },
+    link1: { type: String, required: true },
+    link2: { type: String, required: true },
+    bonusMalus: { type: Number, default: 0, required: false }
   }],
-  
-  // Compétences : Entrées manuelles par l'utilisateur
+
+  // 🔥 Compétences spéciales
   skills: [{
     specialSkill: { type: String, required: false },
     link1: { type: String, required: false },
     link2: { type: String, required: false },
-    score: { type: Number, required: false }
+    score: { type: Number, required: false },
+    bonusMalus: { type: Number, default: 0 }
   }],
-  
-  // Inventaire : Entrées manuelles par l'utilisateur
+
+  weapons: [{
+    name: { type: String, required: false },
+    damage: { type: String, required: false }
+  }],
+
   inventory: [{
     item: { type: String, required: false },
     quantity: { type: Number, required: false }
   }],
-  
+
   image: { type: String, required: false },
-
-  // 🔥 Lien vers la table de jeu
   tableIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "TableTop" }],
-
-  // Lien vers l'utilisateur
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 });
 

@@ -11,10 +11,15 @@ router.get('/tables/:id', tableController.getTableById);
 router.post('/verifyPassword/:id', tableController.verifyPassword);
 router.post('/addPlayer/:tableId', protect, tableController.addPlayer);
 router.delete('/tables/:id', protect, tableController.deleteTable);
-router.put('/tables/:id/notes', protect, tableController.updateNotes);
+router.put("/tables/:id/notes", tableController.updateNotes);
 router.get('/tables/:id/players', tableController.getPlayersFromTable);
 router.delete('/tables/:tableId/removePlayer/:userId', tableController.removePlayerFromTable);
 router.delete('/tables/:tableId/removeCharacter/:userId', tableController.removePlayerCharacter);
 router.post("/selectCharacter", tableController.selectCharacterForPlayer);
+router.put("/tables/:id/player-notes", tableController.updatePlayerNotes);
+router.get("/tables/:id/player-notes", tableController.getPlayerNotes);
+router.get('/tables', tableController.getTables);
+router.get("/tables/:id/notes", tableController.getGameMasterNotes);
+
 
 module.exports = router;

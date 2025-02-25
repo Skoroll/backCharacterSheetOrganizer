@@ -132,16 +132,75 @@ exports.deleteTable = async (req, res) => {
 // 📌 Mettre à jour les notes du MJ
 exports.updateNotes = async (req, res) => {
   const { id } = req.params;
+  console.log("🛠 updateNotes appelée avec ID :", id);
+
   const { characters, quest, other, items } = req.body;
 
   try {
     const table = await TableTop.findById(id);
-    if (!table) return res.status(404).json({ message: "Table introuvable" });
+    if (!table) {
+      return res.status(404).json({ message: "Table introuvable" });
+    }
 
     table.gameMasterNotes = { characters, quest, other, items };
     await table.save();
 
     res.json({ message: "Notes mises à jour avec succès", table });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
+
+exports.getGameMasterNotes = async (req, res) => {
+  const { id } = req.params;
+  console.log("🔹 Requête reçue pour récupérer les notes du MJ :", id);
+
+  try {
+    const table = await TableTop.findById(id);
+    if (!table) {
+      console.log("❌ Table introuvable :", id);
+      return res.status(404).json({ message: "Table introuvable" });
+    }
+
+    res.json(table.gameMasterNotes); // 📌 Renvoie les notes du MJ
+  } catch (error) {
+    console.error("❌ Erreur serveur :", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
+
+
+// 📌 Mettre à jour les notes d'un joueur
+exports.updatePlayerNotes = async (req, res) => {
+  const { id } = req.params; // ID de la table
+  const { playerId, characters, quest, other, items } = req.body;
+
+  try {
+    const table = await TableTop.findById(id);
+    if (!table) return res.status(404).json({ message: "Table introuvable" });
+
+    // Trouver les notes du joueur dans `playerNotes`
+    const playerNoteIndex = table.playerNotes.findIndex(
+      (note) => note.playerId.toString() === playerId
+    );
+
+    if (playerNoteIndex !== -1) {
+      // Si les notes existent, on les met à jour
+      table.playerNotes[playerNoteIndex] = {
+        playerId,
+        characters,
+        quest,
+        other,
+        items,
+      };
+    } else {
+      // Sinon, on ajoute un nouvel objet de notes pour le joueur
+      table.playerNotes.push({ playerId, characters, quest, other, items });
+    }
+
+    await table.save();
+
+    res.json({ message: "Notes du joueur mises à jour avec succès", table });
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
@@ -166,6 +225,57 @@ exports.getPlayersFromTable = async (req, res) => {
   }
 };
 
+// 📌 Récupérer les notes d'un joueur spécifique
+exports.getPlayerNotes = async (req, res) => {
+  const { id } = req.params; // ID de la table
+  const { playerId } = req.query; // ID du joueur
+
+  console.log("🔹 Requête reçue pour récupérer les notes du joueur :", playerId, "dans la table :", id);
+
+  try {
+    // Vérifie si l'ID de la table est valide
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      console.log("❌ ID de table invalide :", id);
+      return res.status(400).json({ message: "ID de table invalide" });
+    }
+
+    // Vérifie si l'ID du joueur est valide
+    if (!mongoose.Types.ObjectId.isValid(playerId)) {
+      console.log("❌ ID du joueur invalide :", playerId);
+      return res.status(400).json({ message: "ID du joueur invalide" });
+    }
+
+    const table = await TableTop.findById(id);
+    if (!table) {
+      console.log("❌ Table introuvable pour ID :", id);
+      return res.status(404).json({ message: "Table introuvable" });
+    }
+
+    console.log("✅ Table trouvée :", table.name);
+    console.log("📝 `playerNotes` actuel dans la table :", table.playerNotes);
+
+    if (!table.playerNotes) {
+      console.log("❌ `playerNotes` n'existe pas !");
+      return res.status(500).json({ message: "Erreur interne : `playerNotes` non défini." });
+    }
+
+    // Trouver les notes du joueur
+    const playerNotes = table.playerNotes.find(
+      (note) => note.playerId.toString() === playerId
+    );
+
+    if (!playerNotes) {
+      console.log("❌ Aucune note trouvée pour ce joueur :", playerId);
+      return res.status(404).json({ message: "Aucune note trouvée pour ce joueur" });
+    }
+
+    console.log("✅ Notes du joueur récupérées :", playerNotes);
+    res.status(200).json(playerNotes);
+  } catch (error) {
+    console.error("❌ Erreur serveur :", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
 
 
 // 📌 Supprimer un joueur d'une table

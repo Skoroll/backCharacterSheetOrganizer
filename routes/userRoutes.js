@@ -12,4 +12,9 @@ router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 router.get('/users/:id', userController.getUserById);
 router.get('/players', userController.getPlayersByIds);
 
+// 📩 Récupération de mot de passe
+router.post("/forgot-password", userController.forgotPassword);
+router.get("/reset-password/:token", userController.verifyResetToken);
+router.post("/reset-password/:token", userController.resetPasswordRequest);
+
 module.exports = router;
