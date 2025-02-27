@@ -75,22 +75,28 @@ exports.getAllFiles = async (req, res) => {
     }
 };
 
-  
-
 // 📌 Supprimer un fichier
 exports.deleteFile = async (req, res) => {
   try {
     const file = await GmFile.findById(req.params.id);
     if (!file) return res.status(404).json({ message: "Fichier non trouvé" });
 
-    if (file.type === "image") {
-      // Supprimer le fichier image
-      fs.unlinkSync(path.join(__dirname, "../uploads", file.filename));
+    // Supprimer physiquement le fichier si c'est une image
+    if (file.type === "image" && file.path) {
+      const filePath = path.join(__dirname, "..", file.path);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️ Fichier supprimé: ${filePath}`);
+      } else {
+        console.warn("⚠️ Fichier introuvable sur le serveur :", filePath);
+      }
     }
 
     await GmFile.findByIdAndDelete(req.params.id);
     res.json({ message: "Fichier supprimé avec succès" });
   } catch (error) {
+    console.error("❌ Erreur lors de la suppression :", error);
     res.status(500).json({ message: "Erreur lors de la suppression", error });
   }
 };
+

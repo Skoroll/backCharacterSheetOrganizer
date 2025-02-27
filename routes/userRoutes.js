@@ -12,9 +12,13 @@ router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 router.get('/users/:id', userController.getUserById);
 router.get('/players', userController.getPlayersByIds);
 
-// 📩 Récupération de mot de passe
+// Récupération de mot de passe
 router.post("/forgot-password", userController.forgotPassword);
 router.get("/reset-password/:token", userController.verifyResetToken);
 router.post("/reset-password/:token", userController.resetPasswordRequest);
+
+// Rafraichissement du token
+router.post("/refresh-token", userController.refreshToken);
+router.post('/logout', authMiddleware.protect, userController.logout);
 
 module.exports = router;

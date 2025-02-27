@@ -34,6 +34,13 @@ const tableTopSchema = new mongoose.Schema({
       items: { type: String, default: "" },
     },
   ],
+
+  bannerImage: { type: String, default: "" }, // 📌 Stocke l'URL de l'image de la bannière
+  borderWidth: { type: String, default: "0px" },
+  borderColor: { type: String, default: "#000000" },
+  bannerStyle: { type: String, default: "normal" }, // "normal", "rounded", "shadow"
+  
+  
 });
 
 

@@ -16,6 +16,41 @@ if (!fs.existsSync(uploadDir)) {
   fs.mkdirSync(uploadDir, { recursive: true });
 }
 
+// Fonction pour générer un token d'accès
+const generateAccessToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '15m' });
+};
+
+const generateRefreshToken = (userId) => {
+  return jwt.sign({ id: userId }, process.env.JWT_SECRET, { expiresIn: '7d' });
+};
+
+// Route pour rafraîchir le token
+exports.refreshToken = async (req, res) => {
+  const { refreshToken } = req.body;
+
+  if (!refreshToken) {
+    return res.status(401).json({ message: "Refresh token manquant" });
+  }
+
+  try {
+    const decoded = jwt.verify(refreshToken, process.env.JWT_SECRET);
+    const user = await User.findById(decoded.id);
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    const newAccessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const newRefreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
+
+    res.json({ accessToken: newAccessToken, newRefreshToken });
+  } catch (error) {
+    res.status(403).json({ message: "Refresh token invalide" });
+  }
+};
+
+
 // Fonction pour l'inscription d'un utilisateur
 exports.register = async (req, res) => {
   const { name, email, password } = req.body;
@@ -49,40 +84,55 @@ exports.register = async (req, res) => {
 // Fonction pour la connexion d'un utilisateur
 exports.login = async (req, res) => {
   const { name, password } = req.body;
+
+  console.log("🔹 Tentative de connexion avec :", name);
+
   if (!name || !password) {
-    console.log("Données manquantes :", { name, password });
+    console.log("❌ Champs manquants !");
     return res.status(400).json({ message: "Les champs 'name' et 'password' sont obligatoires." });
   }
 
   try {
-    // Récupération de l'utilisateur en base de données
     const user = await User.findOne({ name });
-
     if (!user) {
-      console.log("Utilisateur non trouvé :", name);
+      console.log("❌ Utilisateur non trouvé !");
       return res.status(401).json({ message: "Nom ou mot de passe incorrect." });
     }
 
-    const match = await bcrypt.compare(password.trim(), user.password);
-    console.log("Mot de passe correct :", match);
+    const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      console.log("Mot de passe incorrect :", password, "Attendu :", user.password);
+      console.log("❌ Mot de passe incorrect !");
       return res.status(401).json({ message: "Nom ou mot de passe incorrect." });
     }
 
-    const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    console.log("✅ Utilisateur authentifié :", user);
+
+    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
+
+    console.log("🔑 Token généré :", accessToken);
+
+    user.refreshToken = refreshToken; // ✅ Stocke le refresh token en base
+    await user.save();
+
+    console.log("📤 Réponse envoyée :", { 
+      accessToken, 
+      refreshToken, 
+      user: { id: user._id, name: user.name, email: user.email } 
+    });
 
     res.status(200).json({
       message: 'Connexion réussie',
-      token,
+      accessToken,
+      refreshToken,
       user: { id: user._id, name: user.name, email: user.email },
     });
+
   } catch (err) {
-    console.error("Erreur lors de la connexion :", err);
+    console.error("❌ Erreur lors de la connexion :", err);
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
-
 
 // Fonction pour récupérer plusieurs utilisateurs par leurs IDs
 exports.getPlayersByIds = async (req, res) => {
@@ -307,3 +357,16 @@ exports.resetPasswordRequest = async (req, res) => {
 };
 
 
+// Déconnexion (suppression du refresh token)
+exports.logout = async (req, res) => {
+  try {
+    const user = await User.findById(req.user.id);
+    if (user) {
+      user.refreshToken = null;
+      await user.save();
+    }
+    res.status(200).json({ message: "Déconnexion réussie" });
+  } catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

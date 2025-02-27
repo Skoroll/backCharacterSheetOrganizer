@@ -8,5 +8,4 @@ router.post("/upload", uploadGmFile.array("files", 10), convertToWebp, gmFilesCo
 
 router.get("/files", gmFilesController.getAllFiles);
 router.delete("/files/:id", gmFilesController.deleteFile);
-
 module.exports = router;

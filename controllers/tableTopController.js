@@ -1,6 +1,10 @@
 const TableTop = require('../models/tabletopModel');
 const User = require("../models/userModel");
 const bcrypt = require('bcrypt');
+const fs = require("fs");
+const path = require("path"); // ✅ Ajout de l'import path
+
+
 
 // 📌 Créer une nouvelle table
 exports.tableCreate = async (req, res) => {
@@ -169,7 +173,6 @@ exports.getGameMasterNotes = async (req, res) => {
   }
 };
 
-
 // 📌 Mettre à jour les notes d'un joueur
 exports.updatePlayerNotes = async (req, res) => {
   const { id } = req.params; // ID de la table
@@ -284,13 +287,17 @@ exports.removePlayerFromTable = async (req, res) => {
   console.log(`🗑️ BACKEND: Tentative de suppression du joueur ${userId} de la table ${tableId}`);
 
   try {
+    // 🔹 Récupérer la table
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
+    // 🔹 Récupérer l'utilisateur
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
 
-    // 🔹 Vérification et correction de l'ID utilisateur
+    // 🔹 Vérification et suppression du joueur dans la table
     const playerIndex = table.players.findIndex(
-      (player) => player.userId.toString() === userId || player._id.toString() === userId
+      (player) => player.userId.toString() === userId
     );
 
     if (playerIndex === -1) {
@@ -303,11 +310,16 @@ exports.removePlayerFromTable = async (req, res) => {
     table.bannedPlayers.push(removedPlayer.userId.toString());
 
     // ✅ Supprimer la table de `tablesJoined` du joueur
-    await User.findByIdAndUpdate(removedPlayer.userId, { $pull: { tablesJoined: tableId } });
+    user.tablesJoined = user.tablesJoined.filter(
+      (joinedTableId) => joinedTableId.toString() !== tableId
+    );
 
+    // ✅ Sauvegarder les changements
     await table.save();
+    await user.save();
+
     console.log(`✅ Joueur ${removedPlayer.userId} supprimé et banni de la table ${tableId}`);
-    res.status(200).json({ message: "Joueur supprimé avec succès" });
+    res.status(200).json({ message: "Joueur supprimé avec succès et mis à jour dans le compte utilisateur" });
 
   } catch (error) {
     console.error("❌ Erreur lors de la suppression du joueur :", error);
@@ -385,3 +397,45 @@ exports.selectCharacterForPlayer = async (req, res) => {
   }
 };
 
+exports.updateTableStyle = async (req, res) => {
+  const { id } = req.params;
+  const { borderWidth, borderColor, bannerStyle } = req.body;
+  const bannerImage = req.files?.length > 0 ? `/gmAssets/${req.files[0].filename}` : null; // ✅ Nouvelle image
+
+  console.log("🔹 Requête reçue pour updateTableStyle :", { id, borderWidth, borderColor, bannerStyle, bannerImage });
+
+  try {
+      const table = await TableTop.findById(id);
+      if (!table) {
+          console.error("❌ Table introuvable :", id);
+          return res.status(404).json({ message: "Table introuvable" });
+      }
+
+      console.log("🔹 Table trouvée :", table);
+
+      // 🔥 Supprimer l'ancienne bannière si une nouvelle est envoyée
+      if (bannerImage && table.bannerImage) {
+          const oldImagePath = path.join(__dirname, "..", table.bannerImage);
+          if (fs.existsSync(oldImagePath)) {
+              fs.unlinkSync(oldImagePath);
+              console.log(`🗑️ Ancienne bannière supprimée: ${oldImagePath}`);
+          } else {
+              console.warn("⚠️ Ancienne bannière non trouvée sur le serveur :", oldImagePath);
+          }
+      }
+
+      // ✅ Mettre à jour la bannière
+      table.bannerImage = bannerImage || table.bannerImage; 
+      table.borderWidth = borderWidth || table.borderWidth;
+      table.borderColor = borderColor || table.borderColor;
+      table.bannerStyle = bannerStyle || table.bannerStyle;
+
+      const updatedTable = await table.save();
+      console.log("✅ Nouvelle bannière enregistrée :", updatedTable);
+
+      res.status(200).json(updatedTable);
+  } catch (error) {
+      console.error("❌ Erreur lors de la mise à jour du style :", error);
+      res.status(500).json({ message: "Erreur serveur", error });
+  }
+};

@@ -1,6 +1,7 @@
 const express = require('express');
 const tableController = require('../controllers/tableTopController'); 
 const { protect } = require("../middlewares/authMiddleware");
+const { uploadGmFile, convertToWebp } = require("../middlewares/multer-config");
 
 
 const router = express.Router();
@@ -20,6 +21,11 @@ router.put("/tables/:id/player-notes", tableController.updatePlayerNotes);
 router.get("/tables/:id/player-notes", tableController.getPlayerNotes);
 router.get('/tables', tableController.getTables);
 router.get("/tables/:id/notes", tableController.getGameMasterNotes);
+router.put("/tables/:id/style", uploadGmFile.array("bannerImage", 1), convertToWebp, tableController.updateTableStyle);
+
+
 
 
 module.exports = router;
+
+

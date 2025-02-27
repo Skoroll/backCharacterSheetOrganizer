@@ -14,7 +14,7 @@ const gmFilesRoutes = require("./routes/gmFilesRoutes");
 
 // Chargement des variables d'environnement
 dotenv.config();
-
+console.log("🔑 JWT_SECRET:", process.env.JWT_SECRET);
 const app = express();
 const server = http.createServer(app); // Création du serveur HTTP
 
