@@ -7,6 +7,7 @@ const userSchema = mongoose.Schema({
   password: { type: String, required: true },
   tablesJoined: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Table' }],
   refreshToken: { type: String }, // ✅ Ajout du refresh token
+  isAdmin: {type: Boolean, required: false, default: false}
 });
 
 const User = mongoose.model('User', userSchema);

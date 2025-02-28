@@ -107,7 +107,7 @@ exports.login = async (req, res) => {
 
     console.log("✅ Utilisateur authentifié :", user);
 
-    const accessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const accessToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1d' });
     const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
     console.log("🔑 Token généré :", accessToken);
