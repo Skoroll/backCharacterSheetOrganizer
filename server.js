@@ -32,7 +32,9 @@ mongoose
 // Initialisation de Socket.io avec le serveur HTTP
 const io = require("socket.io")(server, {
   cors: {
-    origin: "http://localhost:5173", // Modifier pour ton domaine en production
+    origin: [process.env.FRONT_URL, "http://localhost:5173"], // Autorise les deux
+    methods: ["GET", "POST"],
+    credentials: true,
   },
 });
 
@@ -123,11 +125,12 @@ app.use((req, res, next) => {
 // Configuration de CORS
 app.use(
   cors({
-    origin: "http://localhost:5173", // À remplacer par ton URL frontend en production
+    origin: [process.env.FRONT_URL, "http://localhost:5173"],
     methods: ["GET", "POST", "PUT", "DELETE", "PATCH"],
     credentials: true,
   })
 );
+console.log("🌍 CORS configuré pour :", process.env.FRONT_URL);
 
 app.use(express.json());
 app.use("/uploads", express.static(path.join(__dirname, "uploads")));
