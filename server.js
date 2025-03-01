@@ -18,8 +18,9 @@ const app = express();
 const server = http.createServer(app);
 
 // Middleware pour CORS global
+const allowedOrigin = (process.env.FRONT_URL || "http://localhost:5173").replace(/\/$/, "");
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", process.env.FRONT_URL || "http://localhost:5173");
+  res.header("Access-Control-Allow-Origin", allowedOrigin);
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.header("Access-Control-Allow-Credentials", "true");
@@ -28,7 +29,6 @@ app.use((req, res, next) => {
   }
   next();
 });
-
 
 // Connexion à MongoDB
 mongoose
@@ -39,30 +39,13 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-  const io = require("socket.io")(server, {
-    cors: {
-      origin: process.env.FRONT_URL || "http://localhost:5173",
-      methods: ["GET", "POST"],
-      credentials: true,
-    },
-  });
-  
-  io.on("connection", (socket) => {
-    console.log("🟢 Un utilisateur s'est connecté via WebSocket");
-  
-    // ✅ Ajoute explicitement les en-têtes CORS pour WebSockets
-    socket.handshake.headers["Access-Control-Allow-Origin"] = process.env.FRONT_URL || "http://localhost:5173";
-    socket.handshake.headers["Access-Control-Allow-Credentials"] = "true";
-  
-    socket.onAny((event, ...args) => {
-      console.log(`📡 [SERVER] Reçu un événement : ${event}`, args);
-    });
-  
-    socket.on("disconnect", () => {
-      console.log("🔴 Un utilisateur s'est déconnecté");
-    });
-  });
-  
+const io = require("socket.io")(server, {
+  cors: {
+    origin: allowedOrigin,
+    methods: ["GET", "POST"],
+    credentials: true,
+  },
+});
 
 app.set("io", io);
 
@@ -91,4 +74,5 @@ app.use("/api/gmfiles", gmFilesRoutes);
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
+  console.log(`🌍 CORS configuré pour : ${allowedOrigin}`);
 });
