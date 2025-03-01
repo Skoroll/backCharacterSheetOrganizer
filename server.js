@@ -23,8 +23,12 @@ app.use((req, res, next) => {
   res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
   res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
   res.header("Access-Control-Allow-Credentials", "true");
+  if (req.method === "OPTIONS") {
+    return res.status(200).end();
+  }
   next();
 });
+
 
 // Connexion à MongoDB
 mongoose
@@ -35,13 +39,30 @@ mongoose
   .then(() => console.log("✅ MongoDB connected"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
-const io = require("socket.io")(server, {
-  cors: {
-    origin: [process.env.FRONT_URL, "http://localhost:5173"],
-    methods: ["GET", "POST"],
-    credentials: true,
-  },
-});
+  const io = require("socket.io")(server, {
+    cors: {
+      origin: process.env.FRONT_URL || "http://localhost:5173",
+      methods: ["GET", "POST"],
+      credentials: true,
+    },
+  });
+  
+  io.on("connection", (socket) => {
+    console.log("🟢 Un utilisateur s'est connecté via WebSocket");
+  
+    // ✅ Ajoute explicitement les en-têtes CORS pour WebSockets
+    socket.handshake.headers["Access-Control-Allow-Origin"] = process.env.FRONT_URL || "http://localhost:5173";
+    socket.handshake.headers["Access-Control-Allow-Credentials"] = "true";
+  
+    socket.onAny((event, ...args) => {
+      console.log(`📡 [SERVER] Reçu un événement : ${event}`, args);
+    });
+  
+    socket.on("disconnect", () => {
+      console.log("🔴 Un utilisateur s'est déconnecté");
+    });
+  });
+  
 
 app.set("io", io);
 
