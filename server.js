@@ -67,6 +67,37 @@ io.on("connection", (socket) => {
   socket.onAny((event, ...args) => {
     console.log(`📡 [SERVER] Reçu un événement : ${event}`, args);
   });
+  socket.on("joinTable", (tableId) => {
+    socket.join(`table-${tableId}`);
+    console.log(`👤 [SERVER] Un utilisateur a rejoint la table ${tableId}`);
+  });
+  socket.on("newMessage", (message) => {
+    console.log("📩 Message reçu et diffusé :", message);
+    io.to(`table-${message.tableId}`).emit("newMessage", message);
+  });
+  socket.on("sendMedia", ({ tableId, mediaUrl }) => {
+    console.log(`📥 [SERVER] Reçu sendMedia pour la table ${tableId}`);
+    io.to(`table-${tableId}`).emit("newMedia", mediaUrl);
+  });
+  socket.on("sendText", ({ tableId, textContent }) => {
+    console.log(`📥 [SERVER] Reçu sendText pour la table ${tableId}`);
+    io.to(`table-${tableId}`).emit("newText", { textContent });
+  });
+  socket.on("removeMedia", ({ tableId }) => {
+    console.log(`🗑️ Suppression du média affiché pour la table ${tableId}`);
+    io.to(`table-${tableId}`).emit("removeMedia");
+  });
+  socket.on("updateHealth", ({ characterId, pointsOfLife, tableId, characterName }) => {
+    console.log("⚡ Mise à jour PV reçue :", characterId, pointsOfLife);
+    io.to(`table-${tableId}`).emit("updateHealth", { characterId, pointsOfLife });
+    const systemMessage = {
+      message: `${characterName} change ses points de vie en : ${pointsOfLife}`,
+      characterName: "Système",
+      senderName: "Système",
+      tableId: tableId,
+    };
+    io.to(`table-${tableId}`).emit("newMessage", systemMessage);
+  });
   socket.on("disconnect", () => {
     console.log("🔴 Un utilisateur s'est déconnecté");
   });
