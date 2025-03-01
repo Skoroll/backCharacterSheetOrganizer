@@ -18,12 +18,19 @@ const app = express();
 const server = http.createServer(app);
 
 // Middleware pour CORS global
-const allowedOrigin = (process.env.FRONT_URL || "http://localhost:5173").replace(/\/$/, "");
+const allowedOrigins = [
+  (process.env.FRONT_URL || "").replace(/\/$/, ""),
+  "http://localhost:5173"
+];
+
 app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", allowedOrigin);
-  res.header("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
-  res.header("Access-Control-Allow-Headers", "Content-Type, Authorization");
-  res.header("Access-Control-Allow-Credentials", "true");
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.setHeader("Access-Control-Allow-Origin", origin);
+  }
+  res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Credentials", "true");
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
@@ -41,7 +48,13 @@ mongoose
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: allowedOrigin,
+    origin: function (origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error("Not allowed by CORS"));
+      }
+    },
     methods: ["GET", "POST"],
     credentials: true,
   },
@@ -74,5 +87,5 @@ app.use("/api/gmfiles", gmFilesRoutes);
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 CORS configuré pour : ${allowedOrigin}`);
+  console.log(`🌍 CORS configuré pour : ${allowedOrigins.join(", ")}`);
 });
