@@ -18,14 +18,14 @@ const app = express();
 const server = http.createServer(app);
 
 // Middleware pour CORS global
-const allowedOrigins = [
+const allowedOrigins = new Set([
   (process.env.FRONT_URL || "").replace(/\/$/, ""),
   "http://localhost:5173"
-];
+]);
 
 app.use((req, res, next) => {
   const origin = req.headers.origin;
-  if (origin && allowedOrigins.includes(origin)) {
+  if (origin && allowedOrigins.has(origin)) {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
@@ -48,8 +48,8 @@ mongoose
 
 const io = require("socket.io")(server, {
   cors: {
-    origin: function (origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.has(origin)) {
         callback(null, true);
       } else {
         callback(new Error("Not allowed by CORS"));
@@ -87,5 +87,5 @@ app.use("/api/gmfiles", gmFilesRoutes);
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
   console.log(`🚀 Server running on port ${PORT}`);
-  console.log(`🌍 CORS configuré pour : ${allowedOrigins.join(", ")}`);
+  console.log(`🌍 CORS configuré pour : ${Array.from(allowedOrigins).join(", ")}`);
 });
