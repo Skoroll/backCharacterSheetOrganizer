@@ -19,6 +19,7 @@ console.log("🔑 JWT_SECRET:", process.env.JWT_SECRET);
 const app = express();
 const server = http.createServer(app); // Création du serveur HTTP
 
+
 // Connexion à MongoDB
 mongoose
   .connect(process.env.MONGO_URI, {
