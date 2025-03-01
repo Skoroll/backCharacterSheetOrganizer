@@ -1,8 +1,9 @@
-import Character from "../models/characterModel.js";
-import TableTop from "../models/tabletopModel.js";
-import Message from "../models/Message.js";
+const Character = require("../models/characterModel");
+const TableTop = require("../models/tabletopModel");
+const Message = require("../models/Message");
+
 // 📌 Créer un personnage avec image
-export const createCharacter = async (req, res) => {
+const createCharacter = async (req, res) => {
   try {
     const {
       name,
@@ -75,7 +76,7 @@ export const createCharacter = async (req, res) => {
 
 
 // 📌 Récupérer un personnage par son ID
-export const getCharacterById = async (req, res) => {
+ const getCharacterById = async (req, res) => {
   try {
     const character = await Character.findById(req.params.id);
     if (!character) {
@@ -88,7 +89,7 @@ export const getCharacterById = async (req, res) => {
 };
 
 // 📌 Récupérer tous les personnages
-export const getAllCharacters = async (req, res) => {
+const getAllCharacters = async (req, res) => {
   try {
     const characters = await Character.find();
     res.status(200).json(characters);
@@ -98,7 +99,7 @@ export const getAllCharacters = async (req, res) => {
 };
 
 // 📌 Mettre à jour un personnage
-export const updateCharacter = async (req, res) => {
+const updateCharacter = async (req, res) => {
   try {
     console.log("🔍 Données reçues par le backend :", req.body);
 
@@ -130,7 +131,7 @@ export const updateCharacter = async (req, res) => {
 };
 
 // 📌 Supprimer un personnage
-export const deleteCharacter = async (req, res) => {
+const deleteCharacter = async (req, res) => {
   try {
     const deletedCharacter = await Character.findByIdAndDelete(req.params.id);
     if (!deletedCharacter) {
@@ -143,7 +144,7 @@ export const deleteCharacter = async (req, res) => {
 };
 
 // 📌 Récupérer les personnages d'un utilisateur spécifique (authentifié)
-export const getUserCharacters = async (req, res) => {
+const getUserCharacters = async (req, res) => {
   try {
     
     if (!req.user || !req.user.id) {
@@ -160,7 +161,7 @@ export const getUserCharacters = async (req, res) => {
   }
 };
 
-export const getCharactersByUser = async (req, res) => {
+const getCharactersByUser = async (req, res) => {
   try {
     const characters = await Character.find({ userId: req.user.id })
       .populate('weapons')  // Résoudre les références des armes
@@ -179,7 +180,7 @@ export const getCharactersByUser = async (req, res) => {
   }
 };
 
-export const updateHealth = async (req, res) => {
+const updateHealth = async (req, res) => {
   try {
     console.log("📥 Requête reçue pour updateHealth :", req.body);
 
@@ -247,3 +248,13 @@ export const updateHealth = async (req, res) => {
   }
 };
 
+module.exports = {
+  createCharacter,
+  getCharacterById,
+  getAllCharacters,
+  updateCharacter,
+  deleteCharacter,
+  getUserCharacters,
+  getCharactersByUser,
+  updateHealth,
+}
