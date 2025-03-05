@@ -28,6 +28,9 @@ exports.tableCreate = async (req, res) => {
       bannedPlayers: [],
     });
 
+    // 🔹 Ajouter la table aux `tablesJoined` du MJ
+    await User.findByIdAndUpdate(gameMaster, { $addToSet: { tablesJoined: newTable._id } });
+
     res.status(201).json({
       message: "Table créée avec succès.",
       table: { id: newTable._id, name: newTable.name, gameMaster: newTable.gameMaster, gameMasterName: newTable.gameMasterName },
