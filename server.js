@@ -60,6 +60,9 @@ const io = require("socket.io")(server, {
   },
 });
 
+app.use("/gmAssets", express.static("gmAssets"));
+
+
 app.set("io", io);
 
 io.on("connection", (socket) => {
