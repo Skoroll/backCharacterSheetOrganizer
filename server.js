@@ -4,6 +4,7 @@ const mongoose = require("mongoose");
 const http = require("http");
 const cors = require("cors");
 const path = require("path");
+const compression = require("compression");
 
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
@@ -15,7 +16,9 @@ const gmFilesRoutes = require("./routes/gmFilesRoutes");
 dotenv.config();
 console.log("🔑 JWT_SECRET:", process.env.JWT_SECRET);
 const app = express();
+app.use(compression());
 const server = http.createServer(app);
+
 
 // Middleware pour CORS global
 const allowedOrigins = new Set([
