@@ -161,24 +161,15 @@ exports.getProfile = async (req, res) => {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
 
-    // Vérifier si les tables existent encore
-    const existingTables = await Table.find({ _id: { $in: user.tablesJoined } });
-
-    // Mettre à jour le profil utilisateur en supprimant les références aux tables inexistantes
-    const existingTableIds = existingTables.map(table => table._id.toString());
-    if (existingTableIds.length !== user.tablesJoined.length) {
-      await User.findByIdAndUpdate(user._id, { tablesJoined: existingTableIds });
-    }
-
     res.status(200).json({
       message: 'Utilisateur récupéré avec succès',
-      user: { ...user.toObject(), tablesJoined: existingTableIds },
+      user,
     });
   } catch (error) {
-    console.error(error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
+
 
 
 // Fonction pour la modification du profil
