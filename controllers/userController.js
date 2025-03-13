@@ -1,4 +1,5 @@
 const User = require('../models/userModel');
+const TableTop = require('../models/tabletopModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const uploadMiddleware = require('../middlewares/uploadMiddleware');  // Assure-toi que le chemin est correct
@@ -162,8 +163,9 @@ exports.getProfile = async (req, res) => {
       .select('-password')
       .populate({
         path: 'tablesJoined',
-        match: { _id: { $exists: true } }, // Filtre les tables existantes
-      });
+        model: 'TableTop', // ✅ Assure-toi d'utiliser le bon nom
+        match: { _id: { $exists: true } },
+      });      
 
     if (!user) {
       console.log("❌ Utilisateur non trouvé :", req.user.id);
