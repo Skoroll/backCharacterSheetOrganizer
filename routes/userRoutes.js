@@ -12,6 +12,9 @@ router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 router.get('/users/:id', userController.getUserById);
 router.get('/players', userController.getPlayersByIds);
 
+// ✅ Correction : Importation et utilisation correcte de `protect` et `updateUserTables`
+router.patch("/update-tables", authMiddleware.protect, userController.updateUserTables);
+
 // Récupération de mot de passe
 router.post("/forgot-password", userController.forgotPassword);
 router.get("/reset-password/:token", userController.verifyResetToken);

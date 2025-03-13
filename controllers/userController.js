@@ -156,9 +156,23 @@ exports.getPlayersByIds = async (req, res) => {
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {
   try {
-    const user = await User.findById(req.user.id).select('-password');
+    let user = await User.findById(req.user.id)
+      .select('-password')
+      .populate({
+        path: 'tablesJoined',
+        match: { _id: { $exists: true } }, // Filtre les tables existantes
+      });
+
     if (!user) {
       return res.status(404).json({ message: 'Utilisateur non trouvé' });
+    }
+
+    // Nettoyer les tables supprimées du profil utilisateur
+    const validTableIds = user.tablesJoined.map((table) => table._id.toString());
+
+    if (validTableIds.length !== user.tablesJoined.length) {
+      user.tablesJoined = validTableIds;
+      await user.save();
     }
 
     res.status(200).json({
@@ -166,11 +180,10 @@ exports.getProfile = async (req, res) => {
       user,
     });
   } catch (error) {
+    console.error('❌ Erreur getProfile:', error);
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
-
-
 
 // Fonction pour la modification du profil
 exports.updateUser = async (req, res) => {
@@ -369,6 +382,26 @@ exports.logout = async (req, res) => {
     }
     res.status(200).json({ message: "Déconnexion réussie" });
   } catch (error) {
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+// Retire les tables inexistantes du profil utilisateur
+exports.updateUserTables = async (req, res) => {
+  try {
+    const { tablesJoined } = req.body;
+
+    const user = await User.findById(req.user.id);
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
+    }
+
+    user.tablesJoined = tablesJoined;
+    await user.save();
+
+    res.status(200).json({ message: "Tables mises à jour avec succès" });
+  } catch (error) {
+    console.error("❌ Erreur updateUserTables:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
