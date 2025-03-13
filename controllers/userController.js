@@ -1,5 +1,4 @@
 const User = require('../models/userModel');
-const TableTop = require('../models/tabletopModel');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const uploadMiddleware = require('../middlewares/uploadMiddleware');  // Assure-toi que le chemin est correct
@@ -157,40 +156,17 @@ exports.getPlayersByIds = async (req, res) => {
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {
   try {
-    console.log("🔍 Récupération du profil de l'utilisateur :", req.user.id);
-
-    let user = await User.findById(req.user.id)
-      .select('-password')
-      .populate({
-        path: 'tablesJoined',
-        model: 'TableTop', // ✅ Assure-toi d'utiliser le bon nom
-        match: { _id: { $exists: true } },
-      });      
-
+    const user = await User.findById(req.user.id).select('-password');
     if (!user) {
-      console.log("❌ Utilisateur non trouvé :", req.user.id);
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
-    }
-
-    console.log("✅ Profil récupéré avec succès :", user);
-
-    // Nettoyer les tables supprimées du profil utilisateur
-    const validTableIds = user.tablesJoined.map((table) => table._id.toString());
-
-    if (validTableIds.length !== user.tablesJoined.length) {
-      console.log("🛠 Mise à jour des tablesJoined...");
-      user.tablesJoined = validTableIds;
-      await user.save();
+      return res.status(404).json({ message: 'Utilisateur non trouvé' });
     }
 
     res.status(200).json({
-      message: "Utilisateur récupéré avec succès",
+      message: 'Utilisateur récupéré avec succès',
       user,
     });
-
   } catch (error) {
-    console.error("❌ Erreur `getProfile` :", error);
-    res.status(500).json({ message: "Erreur serveur", error: error.message });
+    res.status(500).json({ message: 'Erreur serveur' });
   }
 };
 
@@ -392,26 +368,6 @@ exports.logout = async (req, res) => {
     }
     res.status(200).json({ message: "Déconnexion réussie" });
   } catch (error) {
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-};
-
-// Retire les tables inexistantes du profil utilisateur
-exports.updateUserTables = async (req, res) => {
-  try {
-    const { tablesJoined } = req.body;
-
-    const user = await User.findById(req.user.id);
-    if (!user) {
-      return res.status(404).json({ message: "Utilisateur non trouvé" });
-    }
-
-    user.tablesJoined = tablesJoined;
-    await user.save();
-
-    res.status(200).json({ message: "Tables mises à jour avec succès" });
-  } catch (error) {
-    console.error("❌ Erreur updateUserTables:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };

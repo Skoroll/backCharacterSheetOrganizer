@@ -5,7 +5,7 @@ const userSchema = mongoose.Schema({
   name: { type: String, required: true },
   email: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  tablesJoined: [{ type: mongoose.Schema.Types.ObjectId, ref: 'TableTop' }],
+  tablesJoined: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Table' }],
   refreshToken: { type: String }, // ✅ Ajout du refresh token
   isAdmin: {type: Boolean, required: false, default: false}
 });
