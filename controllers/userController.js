@@ -156,6 +156,8 @@ exports.getPlayersByIds = async (req, res) => {
 // Fonction pour récupérer les informations de l'utilisateur connecté
 exports.getProfile = async (req, res) => {
   try {
+    console.log("🔍 Récupération du profil de l'utilisateur :", req.user.id);
+
     let user = await User.findById(req.user.id)
       .select('-password')
       .populate({
@@ -164,26 +166,32 @@ exports.getProfile = async (req, res) => {
       });
 
     if (!user) {
-      return res.status(404).json({ message: 'Utilisateur non trouvé' });
+      console.log("❌ Utilisateur non trouvé :", req.user.id);
+      return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
+
+    console.log("✅ Profil récupéré avec succès :", user);
 
     // Nettoyer les tables supprimées du profil utilisateur
     const validTableIds = user.tablesJoined.map((table) => table._id.toString());
 
     if (validTableIds.length !== user.tablesJoined.length) {
+      console.log("🛠 Mise à jour des tablesJoined...");
       user.tablesJoined = validTableIds;
       await user.save();
     }
 
     res.status(200).json({
-      message: 'Utilisateur récupéré avec succès',
+      message: "Utilisateur récupéré avec succès",
       user,
     });
+
   } catch (error) {
-    console.error('❌ Erreur getProfile:', error);
-    res.status(500).json({ message: 'Erreur serveur' });
+    console.error("❌ Erreur `getProfile` :", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
   }
 };
+
 
 // Fonction pour la modification du profil
 exports.updateUser = async (req, res) => {
