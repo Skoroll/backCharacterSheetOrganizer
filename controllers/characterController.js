@@ -2,6 +2,7 @@ const Character = require("../models/characterModel");
 const TableTop = require("../models/tabletopModel");
 const Message = require("../models/Message");
 const cloudinary = require("cloudinary").v2;
+const fs = require("fs");
 
 // 📌 Créer un personnage avec image
 const createCharacter = async (req, res) => {
