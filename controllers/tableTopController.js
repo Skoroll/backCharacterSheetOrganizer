@@ -3,7 +3,7 @@ const User = require("../models/userModel");
 const bcrypt = require('bcryptjs');
 const fs = require("fs");
 const path = require("path"); // ✅ Ajout de l'import path
-
+const cloudinary = require("cloudinary").v2;
 
 
 // 📌 Créer une nouvelle table
@@ -403,42 +403,60 @@ exports.selectCharacterForPlayer = async (req, res) => {
 exports.updateTableStyle = async (req, res) => {
   const { id } = req.params;
   const { borderWidth, borderColor, bannerStyle } = req.body;
-  const bannerImage = req.files?.length > 0 ? `/gmAssets/${req.files[0].filename}` : null; // ✅ Nouvelle image
-
-  console.log("🔹 Requête reçue pour updateTableStyle :", { id, borderWidth, borderColor, bannerStyle, bannerImage });
 
   try {
-      const table = await TableTop.findById(id);
-      if (!table) {
-          console.error("❌ Table introuvable :", id);
-          return res.status(404).json({ message: "Table introuvable" });
+    const table = await TableTop.findById(id);
+    if (!table) {
+      console.error("❌ Table introuvable :", id);
+      return res.status(404).json({ message: "Table introuvable" });
+    }
+
+    console.log("🔹 Table trouvée :", table);
+
+    let uploadedImageUrl = table.bannerImage;
+
+    if (req.files?.length > 0) {
+      const file = req.files[0];
+
+      // 🔥 Supprimer l’ancienne image Cloudinary si elle existe
+      if (table.bannerImage && table.bannerImage.includes("res.cloudinary.com")) {
+        const segments = table.bannerImage.split("/");
+        const publicId = `tableBanner/${segments[segments.length - 1].split(".")[0]}`;
+
+        try {
+          await cloudinary.uploader.destroy(publicId);
+          console.log("🗑️ Ancienne image supprimée de Cloudinary :", publicId);
+        } catch (err) {
+          console.warn("⚠️ Échec suppression Cloudinary :", err.message);
+        }
       }
 
-      console.log("🔹 Table trouvée :", table);
+      // ✅ Upload vers Cloudinary
+      const result = await cloudinary.uploader.upload(file.path, {
+        folder: "tableBanner",
+        width: 1280,
+        crop: "limit",
+        format: "webp",
+      });
 
-      // 🔥 Supprimer l'ancienne bannière si une nouvelle est envoyée
-      if (bannerImage && table.bannerImage) {
-          const oldImagePath = path.join(__dirname, "..", table.bannerImage);
-          if (fs.existsSync(oldImagePath)) {
-              fs.unlinkSync(oldImagePath);
-              console.log(`🗑️ Ancienne bannière supprimée: ${oldImagePath}`);
-          } else {
-              console.warn("⚠️ Ancienne bannière non trouvée sur le serveur :", oldImagePath);
-          }
-      }
+      uploadedImageUrl = result.secure_url;
 
-      // ✅ Mettre à jour la bannière
-      table.bannerImage = bannerImage || table.bannerImage; 
-      table.borderWidth = borderWidth || table.borderWidth;
-      table.borderColor = borderColor || table.borderColor;
-      table.bannerStyle = bannerStyle || table.bannerStyle;
+      // 🧹 Supprimer le fichier temporaire local
+      fs.unlinkSync(file.path);
+    }
 
-      const updatedTable = await table.save();
-      console.log("✅ Nouvelle bannière enregistrée :", updatedTable);
+    // ✅ Mettre à jour le style dans la base
+    table.bannerImage = uploadedImageUrl;
+    table.borderWidth = borderWidth || table.borderWidth;
+    table.borderColor = borderColor || table.borderColor;
+    table.bannerStyle = bannerStyle || table.bannerStyle;
 
-      res.status(200).json(updatedTable);
+    const updatedTable = await table.save();
+    console.log("✅ Style de table mis à jour :", updatedTable);
+
+    res.status(200).json(updatedTable);
   } catch (error) {
-      console.error("❌ Erreur lors de la mise à jour du style :", error);
-      res.status(500).json({ message: "Erreur serveur", error });
+    console.error("❌ Erreur updateTableStyle :", error);
+    res.status(500).json({ message: "Erreur serveur", error });
   }
 };
