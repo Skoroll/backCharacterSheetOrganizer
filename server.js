@@ -1,10 +1,12 @@
 const express = require("express");
 const dotenv = require("dotenv");
+const cloudinary = require("cloudinary").v2;
 const mongoose = require("mongoose");
 const http = require("http");
 const cors = require("cors");
 const path = require("path");
 const compression = require("compression");
+
 
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
@@ -18,6 +20,20 @@ console.log("🔑 JWT_SECRET:", process.env.JWT_SECRET);
 const app = express();
 app.use(compression());
 const server = http.createServer(app);
+
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET,
+});
+
+cloudinary.api.ping((error, result) => {
+  if (error) {
+    console.error("❌ Erreur de connexion à Cloudinary :", error);
+  } else {
+    console.log("✅ Connexion Cloudinary réussie :", result);
+  }
+});
 
 
 // Middleware pour CORS global

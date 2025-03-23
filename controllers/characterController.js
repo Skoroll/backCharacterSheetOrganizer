@@ -1,6 +1,7 @@
 const Character = require("../models/characterModel");
 const TableTop = require("../models/tabletopModel");
 const Message = require("../models/Message");
+const cloudinary = require("cloudinary").v2;
 
 // 📌 Créer un personnage avec image
 const createCharacter = async (req, res) => {
@@ -25,28 +26,41 @@ const createCharacter = async (req, res) => {
       baseSkills,
     } = req.body;
 
-        // 📌 Initialisation des compétences basiques avec `bonusMalus` à 0 si absent
-        const defaultBaseSkills = [
-          { name: "Artisanat", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
-          { name: "Combat rapproché", link1: "strength", link2: "dexterity", bonusMalus: 0 },
-          { name: "Combat à distance", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
-          { name: "Discrétion", link1: "dexterity", link2: "charisma", bonusMalus: 0 },
-          { name: "Réflexe", link1: "dexterity", link2: "intelligence", bonusMalus: 0 }
-        ];
+    const defaultBaseSkills = [
+      { name: "Artisanat", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
+      { name: "Combat rapproché", link1: "strength", link2: "dexterity", bonusMalus: 0 },
+      { name: "Combat à distance", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
+      { name: "Discrétion", link1: "dexterity", link2: "charisma", bonusMalus: 0 },
+      { name: "Réflexe", link1: "dexterity", link2: "intelligence", bonusMalus: 0 }
+    ];
 
-    // Conversion des champs qui sont envoyés en JSON
     const parsedSkills = req.body.skills ? JSON.parse(req.body.skills) : [];
     const parsedInventory = req.body.inventory ? JSON.parse(req.body.inventory) : [];
-    const parsedBaseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : defaultBaseSkills; // si vous envoyez ce champ aussi
+    const parsedBaseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : defaultBaseSkills;
 
-    // Récupération du chemin de l'image uploadée
-    const imagePath = req.file ? req.file.path : '';
+    let uploadedImageUrl = "";
+
+    // ✅ Upload image vers Cloudinary si présente
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "characterPictures",
+        width: 260,
+        height: 260,
+        crop: "fill",     // Remplit exactement 260x260 en rognant si nécessaire
+        format: "webp",   // Convertit en .webp
+      });
+      
+      uploadedImageUrl = result.secure_url;
+
+      // 🧹 Supprimer le fichier local temporaire
+      fs.unlinkSync(req.file.path);
+    }
 
     const newCharacter = new Character({
       name,
       age,
       className,
-      image: imagePath,
+      image: uploadedImageUrl, // ✅ URL Cloudinary ici
       strength,
       dexterity,
       endurance,
@@ -73,7 +87,6 @@ const createCharacter = async (req, res) => {
     res.status(500).json({ message: "Erreur interne du serveur" });
   }
 };
-
 
 // 📌 Récupérer un personnage par son ID
  const getCharacterById = async (req, res) => {
