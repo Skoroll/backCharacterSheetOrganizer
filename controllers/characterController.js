@@ -122,22 +122,47 @@ function tryParse(value) {
   }
 }
 
+// Met à jour un personnage
 const updateCharacter = async (req, res) => {
   try {
-    console.log("🔍 Données reçues par le backend :", req.body);
+    console.log("🔍 Données reçues :", req.body);
 
     const { baseSkills } = req.body;
 
     const updatedBaseSkills = Array.isArray(baseSkills)
-      ? baseSkills.map(skill => ({
+      ? baseSkills.map((skill) => ({
           ...skill,
-          bonusMalus: skill.bonusMalus || 0, // ✅ Toujours inclure `bonusMalus`
+          bonusMalus: skill.bonusMalus || 0,
         }))
-      : [];
+      : tryParse(baseSkills);
+
+    let uploadedImageUrl = req.body.image;
+
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "characterPictures",
+        width: 260,
+        height: 260,
+        crop: "fill",
+        format: "webp",
+      });
+      uploadedImageUrl = result.secure_url;
+      fs.unlinkSync(req.file.path);
+    }
+
+    const updatedData = {
+      ...req.body,
+      baseSkills: updatedBaseSkills,
+      image: uploadedImageUrl,
+      skills: tryParse(req.body.skills),
+      inventory: tryParse(req.body.inventory),
+      weapons: tryParse(req.body.weapons),
+      tableIds: tryParse(req.body.tableIds),
+    };
 
     const updatedCharacter = await Character.findByIdAndUpdate(
       req.params.id,
-      { ...req.body, baseSkills: updatedBaseSkills },
+      updatedData,
       { new: true, runValidators: true }
     );
 
@@ -146,13 +171,11 @@ const updateCharacter = async (req, res) => {
     }
 
     res.status(200).json(updatedCharacter);
-
   } catch (error) {
     console.error("❌ Erreur mise à jour personnage:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
-
 
 // 📌 Supprimer un personnage
 const deleteCharacter = async (req, res) => {
