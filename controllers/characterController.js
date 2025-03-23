@@ -113,16 +113,28 @@ const getAllCharacters = async (req, res) => {
 };
 
 // 📌 Mettre à jour un personnage
+function tryParse(value) {
+  try {
+    return typeof value === "string" ? JSON.parse(value) : value;
+  } catch (err) {
+    console.warn("⚠️ JSON parse failed:", value);
+    return value;
+  }
+}
+
 const updateCharacter = async (req, res) => {
   try {
-    console.log("🔍 Données reçues par le backend :", req.body);
-
     const characterId = req.params.id;
 
-    const baseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : [];
+    // ✅ Parsing intelligent
+    const baseSkillsRaw = req.body.baseSkills;
+    const baseSkills =
+      Array.isArray(baseSkillsRaw) && baseSkillsRaw.length === 1
+        ? tryParse(baseSkillsRaw[0])
+        : tryParse(baseSkillsRaw);
 
     const updatedBaseSkills = Array.isArray(baseSkills)
-      ? baseSkills.map(skill => ({
+      ? baseSkills.map((skill) => ({
           ...skill,
           bonusMalus: skill.bonusMalus || 0,
         }))
@@ -130,7 +142,6 @@ const updateCharacter = async (req, res) => {
 
     let imageUrl = req.body.image;
 
-    // ✅ Si une nouvelle image est uploadée
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "characterPictures",
@@ -139,42 +150,37 @@ const updateCharacter = async (req, res) => {
         crop: "fill",
         format: "webp",
       });
-
       imageUrl = result.secure_url;
-      fs.unlinkSync(req.file.path); // 🧹 suppression du fichier local
+      fs.unlinkSync(req.file.path);
     }
 
-    // ✅ Construire le corps de la mise à jour
     const updatedData = {
       ...req.body,
       baseSkills: updatedBaseSkills,
       image: imageUrl,
+      skills: tryParse(req.body.skills),
+      inventory: tryParse(req.body.inventory),
+      weapons: tryParse(req.body.weapons),
+      tableIds: tryParse(req.body.tableIds),
     };
 
-    // ⚠️ On parse certains champs JSON qui arrivent en string (car FormData)
-    if (updatedData.skills) {
-      updatedData.skills = JSON.parse(updatedData.skills);
-    }
-    if (updatedData.inventory) {
-      updatedData.inventory = JSON.parse(updatedData.inventory);
-    }
-
-    const updatedCharacter = await Character.findByIdAndUpdate(characterId, updatedData, {
-      new: true,
-      runValidators: true,
-    });
+    const updatedCharacter = await Character.findByIdAndUpdate(
+      characterId,
+      updatedData,
+      { new: true, runValidators: true }
+    );
 
     if (!updatedCharacter) {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
 
     res.status(200).json(updatedCharacter);
-
   } catch (error) {
     console.error("❌ Erreur mise à jour personnage:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // 📌 Supprimer un personnage
 const deleteCharacter = async (req, res) => {
