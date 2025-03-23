@@ -154,6 +154,7 @@ const updateCharacter = async (req, res) => {
       fs.unlinkSync(req.file.path);
     }
 
+    
     const updatedData = {
       ...req.body,
       baseSkills: updatedBaseSkills,
