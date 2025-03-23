@@ -124,50 +124,20 @@ function tryParse(value) {
 
 const updateCharacter = async (req, res) => {
   try {
-    const characterId = req.params.id;
+    console.log("🔍 Données reçues par le backend :", req.body);
 
-    // ✅ Parsing intelligent
-    const baseSkillsRaw = req.body.baseSkills;
-    const baseSkills =
-      Array.isArray(baseSkillsRaw) && baseSkillsRaw.length === 1
-        ? tryParse(baseSkillsRaw[0])
-        : tryParse(baseSkillsRaw);
+    const { baseSkills } = req.body;
 
     const updatedBaseSkills = Array.isArray(baseSkills)
-      ? baseSkills.map((skill) => ({
+      ? baseSkills.map(skill => ({
           ...skill,
-          bonusMalus: skill.bonusMalus || 0,
+          bonusMalus: skill.bonusMalus || 0, // ✅ Toujours inclure `bonusMalus`
         }))
       : [];
 
-    let imageUrl = req.body.image;
-
-    if (req.file) {
-      const result = await cloudinary.uploader.upload(req.file.path, {
-        folder: "characterPictures",
-        width: 260,
-        height: 260,
-        crop: "fill",
-        format: "webp",
-      });
-      imageUrl = result.secure_url;
-      fs.unlinkSync(req.file.path);
-    }
-
-    
-    const updatedData = {
-      ...req.body,
-      baseSkills: updatedBaseSkills,
-      image: imageUrl,
-      skills: tryParse(req.body.skills),
-      inventory: tryParse(req.body.inventory),
-      weapons: tryParse(req.body.weapons),
-      tableIds: tryParse(req.body.tableIds),
-    };
-
     const updatedCharacter = await Character.findByIdAndUpdate(
-      characterId,
-      updatedData,
+      req.params.id,
+      { ...req.body, baseSkills: updatedBaseSkills },
       { new: true, runValidators: true }
     );
 
@@ -176,6 +146,7 @@ const updateCharacter = async (req, res) => {
     }
 
     res.status(200).json(updatedCharacter);
+
   } catch (error) {
     console.error("❌ Erreur mise à jour personnage:", error);
     res.status(500).json({ message: "Erreur serveur" });
