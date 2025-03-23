@@ -117,20 +117,52 @@ const updateCharacter = async (req, res) => {
   try {
     console.log("🔍 Données reçues par le backend :", req.body);
 
-    const { baseSkills } = req.body;
+    const characterId = req.params.id;
+
+    const baseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : [];
 
     const updatedBaseSkills = Array.isArray(baseSkills)
       ? baseSkills.map(skill => ({
           ...skill,
-          bonusMalus: skill.bonusMalus || 0, // ✅ Toujours inclure `bonusMalus`
+          bonusMalus: skill.bonusMalus || 0,
         }))
       : [];
 
-    const updatedCharacter = await Character.findByIdAndUpdate(
-      req.params.id,
-      { ...req.body, baseSkills: updatedBaseSkills },
-      { new: true, runValidators: true }
-    );
+    let imageUrl = req.body.image;
+
+    // ✅ Si une nouvelle image est uploadée
+    if (req.file) {
+      const result = await cloudinary.uploader.upload(req.file.path, {
+        folder: "characterPictures",
+        width: 260,
+        height: 260,
+        crop: "fill",
+        format: "webp",
+      });
+
+      imageUrl = result.secure_url;
+      fs.unlinkSync(req.file.path); // 🧹 suppression du fichier local
+    }
+
+    // ✅ Construire le corps de la mise à jour
+    const updatedData = {
+      ...req.body,
+      baseSkills: updatedBaseSkills,
+      image: imageUrl,
+    };
+
+    // ⚠️ On parse certains champs JSON qui arrivent en string (car FormData)
+    if (updatedData.skills) {
+      updatedData.skills = JSON.parse(updatedData.skills);
+    }
+    if (updatedData.inventory) {
+      updatedData.inventory = JSON.parse(updatedData.inventory);
+    }
+
+    const updatedCharacter = await Character.findByIdAndUpdate(characterId, updatedData, {
+      new: true,
+      runValidators: true,
+    });
 
     if (!updatedCharacter) {
       return res.status(404).json({ message: "Personnage non trouvé" });

@@ -50,7 +50,7 @@ router.patch("/:id/update-health", updateHealth);
 router.get("/:id", getCharacterById);
 
 // 🔹 Route pour mettre à jour un personnage
-router.put("/:id", updateCharacter);
+router.put("/:id", upload.single("image"), updateCharacter);
 
 router.get("/characters", protect, getCharactersByUser);
 
