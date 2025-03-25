@@ -21,11 +21,6 @@ const upload = multer({ storage });
 // 📌 Upload d'un fichier texte ou image
 exports.uploadFile = async (req, res) => {
   try {
-    if (req.files?.length) {
-      console.log("📥 Fichiers reçus :", req.files.map(f => f.originalname));
-    }
-    
-    console.log("🧾 Body reçu :", req.body);
 
     const { tableId, title } = req.body;
     if (!tableId) {
@@ -53,7 +48,12 @@ exports.uploadFile = async (req, res) => {
         const result = await cloudinary.uploader.upload(file.path, {
           folder: "gmAssets",
           format: "webp",
+          transformation: [
+            { width: 1280, crop: "limit" },
+            { quality: "auto" },
+          ],
         });
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
 
         const newImage = new GmFile({
           tableId,
