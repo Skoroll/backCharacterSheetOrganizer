@@ -21,28 +21,32 @@ const upload = multer({ storage });
 // 📌 Upload d'un fichier texte ou image
 exports.uploadFile = async (req, res) => {
   try {
-    console.log("📥 Fichier reçu :", req.files);
+    console.log("📥 Fichiers reçus :", req.files);
+    console.log("🧾 Body reçu :", req.body);
+
     const { tableId, title } = req.body;
-    if (!tableId) return res.status(400).json({ message: "ID de table requis." });
+    if (!tableId) {
+      return res.status(400).json({ message: "ID de table requis." });
+    }
 
     const savedFiles = [];
 
+    // ✅ Texte
     if (req.body.text) {
       const newTextFile = new GmFile({
         tableId,
         type: "text",
-        filename: `text-${Date.now()}`,
+        filename: title || `text-${Date.now()}`,
         content: req.body.text,
       });
-      console.log("🧾 Body reçu :", req.body);
-      console.log("📁 Fichiers reçus :", req.files);
 
       await newTextFile.save();
       savedFiles.push(newTextFile);
     }
 
+    // ✅ Images via Cloudinary
     if (req.files && req.files.length > 0) {
-      for (const file of req.files) {
+      const uploadPromises = req.files.map(async (file) => {
         const result = await cloudinary.uploader.upload(file.path, {
           folder: "gmAssets",
           format: "webp",
@@ -56,18 +60,21 @@ exports.uploadFile = async (req, res) => {
         });
 
         await newImage.save();
-        savedFiles.push(newImage);
 
-        // Nettoyage fichier temporaire local
-        const fs = require("fs");
-        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
-      }
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path); // 🔥 Supprimer le fichier temporaire
+
+        return newImage;
+      });
+
+      const uploadedImages = await Promise.all(uploadPromises);
+      savedFiles.push(...uploadedImages);
     }
 
-    res.json({ message: "Fichiers sauvegardés", files: savedFiles });
+    console.log("✅ Upload terminé. Total fichiers enregistrés :", savedFiles.length);
+    return res.json({ message: "Fichiers sauvegardés", files: savedFiles });
   } catch (error) {
     console.error("❌ Erreur lors de l'upload :", error);
-    res.status(500).json({ message: "Erreur lors de l'upload", error });
+    return res.status(500).json({ message: "Erreur lors de l'upload", error });
   }
 };
 
