@@ -21,7 +21,10 @@ const upload = multer({ storage });
 // 📌 Upload d'un fichier texte ou image
 exports.uploadFile = async (req, res) => {
   try {
-    console.log("📥 Fichiers reçus :", req.files);
+    if (req.files?.length) {
+      console.log("📥 Fichiers reçus :", req.files.map(f => f.originalname));
+    }
+    
     console.log("🧾 Body reçu :", req.body);
 
     const { tableId, title } = req.body;
