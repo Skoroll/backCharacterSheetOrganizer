@@ -2,7 +2,7 @@ const GmFile = require("../models/GmFilesModel");
 const cloudinary = require("../utils/cloudinary");
 const streamifier = require("streamifier");
 
-// 🔁 Fonction pour envoyer un buffer à Cloudinary
+// Upload buffer vers Cloudinary
 const uploadToCloudinary = (buffer, filename) => {
   return new Promise((resolve, reject) => {
     const stream = cloudinary.uploader.upload_stream(
@@ -25,30 +25,27 @@ const uploadToCloudinary = (buffer, filename) => {
   });
 };
 
-// 📌 Upload d'un fichier texte ou image
 exports.uploadFile = async (req, res) => {
   try {
-    const { tableId, title } = req.body;
+    const { tableId, title, text } = req.body;
     if (!tableId) {
       return res.status(400).json({ message: "ID de table requis." });
     }
 
     const savedFiles = [];
 
-    // ✅ Texte
-    if (req.body.text) {
+    if (text) {
       const newTextFile = new GmFile({
         tableId,
         type: "text",
         filename: title || `text-${Date.now()}`,
-        content: req.body.text,
+        content: text,
       });
 
       await newTextFile.save();
       savedFiles.push(newTextFile);
     }
 
-    // ✅ Upload d'image via Cloudinary depuis buffer
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map(async (file) => {
         const result = await uploadToCloudinary(file.buffer, file.originalname);
@@ -68,22 +65,17 @@ exports.uploadFile = async (req, res) => {
       savedFiles.push(...uploadedImages);
     }
 
-    console.log("✅ Upload terminé. Total fichiers enregistrés :", savedFiles.length);
     return res.json({ message: "Fichiers sauvegardés", files: savedFiles });
   } catch (error) {
-    console.error("❌ Erreur lors de l'upload :", error);
+    console.error("Erreur lors de l'upload :", error);
     return res.status(500).json({ message: "Erreur lors de l'upload", error });
   }
 };
 
-// 📌 Récupérer tous les fichiers d'une table spécifique
 exports.getAllFiles = async (req, res) => {
   try {
     const { tableId } = req.query;
-
-    if (!tableId) {
-      return res.status(400).json({ message: "ID de table requis." });
-    }
+    if (!tableId) return res.status(400).json({ message: "ID de table requis." });
 
     const files = await GmFile.find({ tableId });
     res.json(files);
@@ -92,7 +84,6 @@ exports.getAllFiles = async (req, res) => {
   }
 };
 
-// 📌 Supprimer un fichier
 exports.deleteFile = async (req, res) => {
   try {
     const file = await GmFile.findById(req.params.id);
@@ -105,16 +96,15 @@ exports.deleteFile = async (req, res) => {
 
       try {
         await cloudinary.uploader.destroy(publicId);
-        console.log("🗑️ Image supprimée de Cloudinary :", publicId);
       } catch (cloudErr) {
-        console.warn("⚠️ Erreur suppression Cloudinary :", cloudErr.message);
+        console.warn("Erreur suppression Cloudinary :", cloudErr.message);
       }
     }
 
     await GmFile.findByIdAndDelete(req.params.id);
     res.json({ message: "Fichier supprimé avec succès" });
   } catch (error) {
-    console.error("❌ Erreur lors de la suppression :", error);
+    console.error("Erreur lors de la suppression :", error);
     res.status(500).json({ message: "Erreur lors de la suppression", error });
   }
 };
