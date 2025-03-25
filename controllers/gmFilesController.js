@@ -22,7 +22,7 @@ const upload = multer({ storage });
 exports.uploadFile = async (req, res) => {
   try {
     console.log("📥 Fichier reçu :", req.files);
-    const { tableId } = req.body;
+    const { tableId, title } = req.body;
     if (!tableId) return res.status(400).json({ message: "ID de table requis." });
 
     const savedFiles = [];
@@ -34,6 +34,9 @@ exports.uploadFile = async (req, res) => {
         filename: `text-${Date.now()}`,
         content: req.body.text,
       });
+      console.log("🧾 Body reçu :", req.body);
+      console.log("📁 Fichiers reçus :", req.files);
+
       await newTextFile.save();
       savedFiles.push(newTextFile);
     }
