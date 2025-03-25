@@ -126,8 +126,6 @@ io.on("connection", (socket) => {
 });
 
 app.use(express.json());
-app.use("/uploads", express.static(path.join(__dirname, "uploads")));
-app.use("/gmAssets", express.static(path.join(__dirname, "gmAssets")));
 
 // Routes
 app.use("/api/users", userRoutes);

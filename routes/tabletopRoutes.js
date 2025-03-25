@@ -1,7 +1,7 @@
 const express = require('express');
 const tableController = require('../controllers/tableTopController'); 
 const { protect } = require("../middlewares/authMiddleware");
-const { uploadGmFile, convertToWebp } = require("../middlewares/multer-config");
+const { uploadGmFile } = require("../middlewares/multer-config");
 
 
 const router = express.Router();
