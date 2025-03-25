@@ -1,110 +1,102 @@
 const GmFile = require("../models/GmFilesModel");
-const cloudinary = require("../utils/cloudinary");
-const streamifier = require("streamifier");
+const multer = require("multer");
+const path = require("path");
+const fs = require("fs");
 
-// Upload buffer vers Cloudinary
-const uploadToCloudinary = (buffer, filename) => {
-  return new Promise((resolve, reject) => {
-    const stream = cloudinary.uploader.upload_stream(
-      {
-        folder: "gmAssets",
-        public_id: filename.split(".")[0],
-        format: "webp",
-        transformation: [
-          { width: 1280, crop: "limit" },
-          { quality: "auto" },
-        ],
-      },
-      (error, result) => {
-        if (result) resolve(result);
-        else reject(error);
-      }
-    );
+// Configuration du stockage pour les images
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    const uploadPath = path.join(__dirname, "../uploads");
+    if (!fs.existsSync(uploadPath)) fs.mkdirSync(uploadPath);
+    cb(null, uploadPath);
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + "-" + file.originalname);
+  },
+});
+const upload = multer({ storage });
 
-    streamifier.createReadStream(buffer).pipe(stream);
-  });
-};
-
+// 📌 Upload d'un fichier texte ou image
 exports.uploadFile = async (req, res) => {
-  try {
-    const { tableId, title, text } = req.body;
-    if (!tableId) {
-      return res.status(400).json({ message: "ID de table requis." });
-    }
-
-    const savedFiles = [];
-
-    if (text) {
-      const newTextFile = new GmFile({
-        tableId,
-        type: "text",
-        filename: title || `text-${Date.now()}`,
-        content: text,
-      });
-
-      await newTextFile.save();
-      savedFiles.push(newTextFile);
-    }
-
-    if (req.files && req.files.length > 0) {
-      const uploadPromises = req.files.map(async (file) => {
-        const result = await uploadToCloudinary(file.buffer, file.originalname);
-
-        const newImage = new GmFile({
+    try {
+      console.log("📥 Fichier reçu :", req.files);
+      console.log("📥 Table ID reçu :", req.body.tableId);
+  
+      const { tableId } = req.body;
+      if (!tableId) return res.status(400).json({ message: "ID de table requis." });
+  
+      const savedFiles = [];
+  
+      if (req.body.text) {
+        const newTextFile = new GmFile({
+          tableId,
+          type: "text",
+          filename: `text-${Date.now()}`,
+          content: req.body.text,
+        });
+        await newTextFile.save();
+        savedFiles.push(newTextFile);
+      }
+  
+      if (req.files) {
+        const uploadedFiles = req.files.map((file) => ({
           tableId,
           type: "image",
-          filename: file.originalname,
-          path: result.secure_url,
-        });
-
-        await newImage.save();
-        return newImage;
-      });
-
-      const uploadedImages = await Promise.all(uploadPromises);
-      savedFiles.push(...uploadedImages);
+          filename: file.filename,
+          path: `/gmAssets/${file.filename}`,
+        }));
+  
+        const savedImages = await GmFile.insertMany(uploadedFiles);
+        savedFiles.push(...savedImages);
+      }
+  
+      res.json({ message: "Fichiers sauvegardés", files: savedFiles });
+    } catch (error) {
+      console.error("❌ Erreur lors de l'upload :", error);
+      res.status(500).json({ message: "Erreur lors de l'upload", error });
     }
-
-    return res.json({ message: "Fichiers sauvegardés", files: savedFiles });
-  } catch (error) {
-    console.error("Erreur lors de l'upload :", error);
-    return res.status(500).json({ message: "Erreur lors de l'upload", error });
-  }
-};
-
+  };
+  
+  
+  
+// 📌 Récupérer tous les fichiers d'une table spécifique
 exports.getAllFiles = async (req, res) => {
-  try {
-    const { tableId } = req.query;
-    if (!tableId) return res.status(400).json({ message: "ID de table requis." });
+    try {
+      const { tableId } = req.query;
+      
+      if (!tableId) {
+        return res.status(400).json({ message: "ID de table requis." });
+      }
 
-    const files = await GmFile.find({ tableId });
-    res.json(files);
-  } catch (error) {
-    res.status(500).json({ message: "Erreur de récupération des fichiers", error });
-  }
+      const files = await GmFile.find({ tableId }); // ✅ Ne récupère que les fichiers de cette table
+      res.json(files);
+    } catch (error) {
+      res.status(500).json({ message: "Erreur de récupération des fichiers", error });
+    }
 };
 
+// 📌 Supprimer un fichier
 exports.deleteFile = async (req, res) => {
   try {
     const file = await GmFile.findById(req.params.id);
     if (!file) return res.status(404).json({ message: "Fichier non trouvé" });
 
-    if (file.path?.startsWith("https://res.cloudinary.com")) {
-      const parts = file.path.split("/");
-      const filenameWithExt = parts[parts.length - 1];
-      const publicId = "gmAssets/" + filenameWithExt.split(".")[0];
-
-      try {
-        await cloudinary.uploader.destroy(publicId);
-      } catch (cloudErr) {
-        console.warn("Erreur suppression Cloudinary :", cloudErr.message);
+    // Supprimer physiquement le fichier si c'est une image
+    if (file.type === "image" && file.path) {
+      const filePath = path.join(__dirname, "..", file.path);
+      if (fs.existsSync(filePath)) {
+        fs.unlinkSync(filePath);
+        console.log(`🗑️ Fichier supprimé: ${filePath}`);
+      } else {
+        console.warn("⚠️ Fichier introuvable sur le serveur :", filePath);
       }
     }
 
     await GmFile.findByIdAndDelete(req.params.id);
     res.json({ message: "Fichier supprimé avec succès" });
   } catch (error) {
-    console.error("Erreur lors de la suppression :", error);
+    console.error("❌ Erreur lors de la suppression :", error);
     res.status(500).json({ message: "Erreur lors de la suppression", error });
   }
 };
+
