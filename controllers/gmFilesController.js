@@ -2,6 +2,7 @@ const GmFile = require("../models/GmFilesModel");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
+const cloudinary = require("cloudinary").v2;
 
 // Configuration du stockage pour les images
 const storage = multer.diskStorage({
@@ -18,47 +19,54 @@ const upload = multer({ storage });
 
 // 📌 Upload d'un fichier texte ou image
 exports.uploadFile = async (req, res) => {
-    try {
-      console.log("📥 Fichier reçu :", req.files);
-      console.log("📥 Table ID reçu :", req.body.tableId);
-  
-      const { tableId } = req.body;
-      if (!tableId) return res.status(400).json({ message: "ID de table requis." });
-  
-      const savedFiles = [];
-  
-      if (req.body.text) {
-        const newTextFile = new GmFile({
-          tableId,
-          type: "text",
-          filename: `text-${Date.now()}`,
-          content: req.body.text,
+  try {
+    console.log("📥 Fichier reçu :", req.files);
+    const { tableId } = req.body;
+    if (!tableId) return res.status(400).json({ message: "ID de table requis." });
+
+    const savedFiles = [];
+
+    if (req.body.text) {
+      const newTextFile = new GmFile({
+        tableId,
+        type: "text",
+        filename: `text-${Date.now()}`,
+        content: req.body.text,
+      });
+      await newTextFile.save();
+      savedFiles.push(newTextFile);
+    }
+
+    if (req.files && req.files.length > 0) {
+      for (const file of req.files) {
+        const result = await cloudinary.uploader.upload(file.path, {
+          folder: "gmAssets",
+          format: "webp",
         });
-        await newTextFile.save();
-        savedFiles.push(newTextFile);
-      }
-  
-      if (req.files) {
-        const uploadedFiles = req.files.map((file) => ({
+
+        const newImage = new GmFile({
           tableId,
           type: "image",
-          filename: file.filename,
-          path: `/gmAssets/${file.filename}`,
-        }));
-  
-        const savedImages = await GmFile.insertMany(uploadedFiles);
-        savedFiles.push(...savedImages);
+          filename: file.originalname,
+          path: result.secure_url,
+        });
+
+        await newImage.save();
+        savedFiles.push(newImage);
+
+        // Nettoyage fichier temporaire local
+        const fs = require("fs");
+        if (fs.existsSync(file.path)) fs.unlinkSync(file.path);
       }
-  
-      res.json({ message: "Fichiers sauvegardés", files: savedFiles });
-    } catch (error) {
-      console.error("❌ Erreur lors de l'upload :", error);
-      res.status(500).json({ message: "Erreur lors de l'upload", error });
     }
-  };
-  
-  
-  
+
+    res.json({ message: "Fichiers sauvegardés", files: savedFiles });
+  } catch (error) {
+    console.error("❌ Erreur lors de l'upload :", error);
+    res.status(500).json({ message: "Erreur lors de l'upload", error });
+  }
+};
+
 // 📌 Récupérer tous les fichiers d'une table spécifique
 exports.getAllFiles = async (req, res) => {
     try {
@@ -82,13 +90,16 @@ exports.deleteFile = async (req, res) => {
     if (!file) return res.status(404).json({ message: "Fichier non trouvé" });
 
     // Supprimer physiquement le fichier si c'est une image
-    if (file.type === "image" && file.path) {
-      const filePath = path.join(__dirname, "..", file.path);
-      if (fs.existsSync(filePath)) {
-        fs.unlinkSync(filePath);
-        console.log(`🗑️ Fichier supprimé: ${filePath}`);
-      } else {
-        console.warn("⚠️ Fichier introuvable sur le serveur :", filePath);
+    if (file.path?.startsWith("https://res.cloudinary.com")) {
+      const parts = file.path.split("/");
+      const filenameWithExt = parts[parts.length - 1];
+      const publicId = "gmAssets/" + filenameWithExt.split(".")[0]; // ex: gmAssets/monfichier-12345
+    
+      try {
+        await cloudinary.uploader.destroy(publicId);
+        console.log("🗑️ Image supprimée de Cloudinary :", publicId);
+      } catch (cloudErr) {
+        console.warn("⚠️ Erreur suppression Cloudinary :", cloudErr.message);
       }
     }
 
