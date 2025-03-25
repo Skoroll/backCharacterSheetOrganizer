@@ -2,7 +2,8 @@ const GmFile = require("../models/GmFilesModel");
 const multer = require("multer");
 const path = require("path");
 const fs = require("fs");
-const cloudinary = require("cloudinary").v2;
+const cloudinary = require("../utils/cloudinary");
+
 
 // Configuration du stockage pour les images
 const storage = multer.diskStorage({
