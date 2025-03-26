@@ -34,10 +34,12 @@ exports.uploadFile = async (req, res) => {
 
     const savedFiles = [];
 
+    // ✅ Texte
     if (text) {
       const newTextFile = new GmFile({
         tableId,
         type: "text",
+        title: title || `Texte-${Date.now()}`,
         filename: title || `text-${Date.now()}`,
         content: text,
       });
@@ -46,6 +48,7 @@ exports.uploadFile = async (req, res) => {
       savedFiles.push(newTextFile);
     }
 
+    // ✅ Images via Cloudinary
     if (req.files && req.files.length > 0) {
       const uploadPromises = req.files.map(async (file) => {
         const result = await uploadToCloudinary(file.buffer, file.originalname);
@@ -53,6 +56,7 @@ exports.uploadFile = async (req, res) => {
         const newImage = new GmFile({
           tableId,
           type: "image",
+          title: title || file.originalname,
           filename: file.originalname,
           path: result.secure_url,
         });
@@ -71,6 +75,7 @@ exports.uploadFile = async (req, res) => {
     return res.status(500).json({ message: "Erreur lors de l'upload", error });
   }
 };
+
 
 exports.getAllFiles = async (req, res) => {
   try {
