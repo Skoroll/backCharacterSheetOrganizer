@@ -131,14 +131,14 @@ exports.addPlayer = async (req, res) => {
     // 🧠 Récupérer l'utilisateur pour le nom
     const user = await User.findById(userId);
     if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
-
-    // ➕ Ajouter le joueur avec le nouveau personnage
+    
     table.players.push({
       userId,
-      playerName: user.userPseudo,
+      playerName: user.userPseudo || "Joueur",
       selectedCharacter,
       isGameMaster: false,
     });
+    
 
     await table.save();
 
