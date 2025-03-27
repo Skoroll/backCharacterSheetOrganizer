@@ -436,6 +436,8 @@ exports.selectCharacterForPlayer = async (req, res) => {
 exports.updateTableStyle = async (req, res) => {
   const { id } = req.params;
   const { borderWidth, borderColor, bannerStyle } = req.body;
+  console.log("🧾 req.body :", req.body);
+  console.log("📸 req.files :", req.files);
 
   try {
     const table = await TableTop.findById(id);
@@ -446,48 +448,60 @@ exports.updateTableStyle = async (req, res) => {
 
     console.log("🔹 Table trouvée :", table);
 
-    let uploadedImageUrl = table.bannerImage;
+    // Si aucun fichier → juste mise à jour des styles simples
+    if (!req.files || req.files.length === 0) {
+      table.borderWidth = borderWidth || table.borderWidth;
+      table.borderColor = borderColor || table.borderColor;
+      table.bannerStyle = bannerStyle || table.bannerStyle;
 
-    if (req.files?.length > 0) {
-      const file = req.files[0];
+      const updatedTable = await table.save();
+      console.log("✅ Style (sans image) mis à jour :", updatedTable);
+      return res.status(200).json(updatedTable);
+    }
 
-      // 🔥 Supprimer l’ancienne image Cloudinary si elle existe
-      if (table.bannerImage && table.bannerImage.includes("res.cloudinary.com")) {
-        const segments = table.bannerImage.split("/");
-        const publicId = `tableBanner/${segments[segments.length - 1].split(".")[0]}`;
+    const file = req.files[0];
 
-        try {
-          await cloudinary.uploader.destroy(publicId);
-          console.log("🗑️ Ancienne image supprimée de Cloudinary :", publicId);
-        } catch (err) {
-          console.warn("⚠️ Échec suppression Cloudinary :", err.message);
-        }
+    // 🔥 Supprimer l’ancienne image Cloudinary si elle existe
+    if (table.bannerImage && table.bannerImage.includes("res.cloudinary.com")) {
+      const segments = table.bannerImage.split("/");
+      const publicId = `tableBanner/${segments[segments.length - 1].split(".")[0]}`;
+
+      try {
+        await cloudinary.uploader.destroy(publicId);
+        console.log("🗑️ Ancienne image supprimée de Cloudinary :", publicId);
+      } catch (err) {
+        console.warn("⚠️ Échec suppression Cloudinary :", err.message);
+        return res.status(500).json({ message: "Erreur suppression image précédente" });
       }
+    }
 
-      // ✅ Upload vers Cloudinary
-      const result = await cloudinary.uploader.upload(file.path, {
+    // ✅ Upload vers Cloudinary avec upload_stream
+    const uploadStream = cloudinary.uploader.upload_stream(
+      {
         folder: "tableBanner",
         width: 1280,
         crop: "limit",
         format: "webp",
-      });
+      },
+      async (error, result) => {
+        if (error) {
+          console.error("❌ Erreur Cloudinary :", error);
+          return res.status(500).json({ message: "Erreur lors de l'upload Cloudinary" });
+        }
 
-      uploadedImageUrl = result.secure_url;
+        table.bannerImage = result.secure_url;
+        table.borderWidth = borderWidth || table.borderWidth;
+        table.borderColor = borderColor || table.borderColor;
+        table.bannerStyle = bannerStyle || table.bannerStyle;
 
-      // 🧹 Supprimer le fichier temporaire local
-      fs.unlinkSync(file.path);
-    }
+        const updatedTable = await table.save();
+        console.log("✅ Style de table mis à jour avec image :", updatedTable);
+        return res.status(200).json(updatedTable);
+      }
+    );
 
-    // ✅ Mettre à jour le style dans la base
-    table.bannerImage = uploadedImageUrl;
-    table.borderWidth = borderWidth || table.borderWidth;
-    table.borderColor = borderColor || table.borderColor;
-    table.bannerStyle = bannerStyle || table.bannerStyle;
-
-    const updatedTable = await table.save();
-    console.log("✅ Style de table mis à jour :", updatedTable);
-
-    res.status(200).json(updatedTable);
+    // Envoie le buffer vers le stream
+    uploadStream.end(file.buffer);
   } catch (error) {
     console.error("❌ Erreur updateTableStyle :", error);
     res.status(500).json({ message: "Erreur serveur", error });
