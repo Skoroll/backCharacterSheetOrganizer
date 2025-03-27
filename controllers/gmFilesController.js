@@ -94,22 +94,26 @@ exports.deleteFile = async (req, res) => {
     const file = await GmFile.findById(req.params.id);
     if (!file) return res.status(404).json({ message: "Fichier non trouvé" });
 
-    if (file.path?.startsWith("https://res.cloudinary.com")) {
-      const parts = file.path.split("/");
-      const filenameWithExt = parts[parts.length - 1];
-      const publicId = "gmAssets/" + filenameWithExt.split(".")[0];
-
+    // ✅ Suppression de l'image sur Cloudinary
+    if (file.type === "image" && file.path?.includes("res.cloudinary.com")) {
       try {
-        await cloudinary.uploader.destroy(publicId);
+        const urlParts = file.path.split("/");
+        const filenameWithExt = urlParts[urlParts.length - 1];
+        const publicId = "gmAssets/" + filenameWithExt.split(".")[0]; // ex: gmAssets/monfichier-12345
+
+        const result = await cloudinary.uploader.destroy(publicId);
+        console.log("🗑️ Cloudinary delete result:", result);
       } catch (cloudErr) {
-        console.warn("Erreur suppression Cloudinary :", cloudErr.message);
+        console.warn("⚠️ Erreur suppression Cloudinary :", cloudErr.message);
       }
     }
 
+    // ✅ Suppression du fichier dans MongoDB
     await GmFile.findByIdAndDelete(req.params.id);
     res.json({ message: "Fichier supprimé avec succès" });
   } catch (error) {
-    console.error("Erreur lors de la suppression :", error);
+    console.error("❌ Erreur lors de la suppression :", error);
     res.status(500).json({ message: "Erreur lors de la suppression", error });
   }
 };
+

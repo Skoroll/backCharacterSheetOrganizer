@@ -105,12 +105,24 @@ exports.addPlayer = async (req, res) => {
 
     // Vérifier si le joueur est déjà dans la table
     const isAlreadyInTable = table.players.some(player => player.userId.toString() === userId);
-    if (!isAlreadyInTable) {
-      table.players.push({ userId, playerName, selectedCharacter });
-      await table.save();
+    if (isAlreadyInTable) {
+      return res.status(200).json({ message: "Joueur déjà présent dans la table" });
     }
 
-    // Ajouter la table à `tablesJoined` du joueur
+    // Vérifier s'il s'agit du MJ
+    const isGameMaster = table.gameMaster.toString() === userId;
+
+    // Ajouter le joueur à la table
+    table.players.push({
+      userId,
+      playerName,
+      selectedCharacter: isGameMaster ? null : selectedCharacter,
+      isGameMaster,
+    });
+
+    await table.save();
+
+    // Ajouter la table aux tables du joueur
     await User.findByIdAndUpdate(userId, { $addToSet: { tablesJoined: tableId } });
 
     res.status(200).json({ message: "Joueur ajouté à la table" });
@@ -119,6 +131,7 @@ exports.addPlayer = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // 📌 Supprimer une table
 exports.deleteTable = async (req, res) => {
