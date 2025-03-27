@@ -92,33 +92,65 @@ exports.verifyPassword = async (req, res) => {
 // 📌 Ajouter un joueur à une table
 exports.addPlayer = async (req, res) => {
   const { tableId } = req.params;
-  const { userId, playerName, selectedCharacter } = req.body;
+  const { userId, selectedCharacter } = req.body;
 
   try {
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table introuvable" });
 
-    // Vérifier si le joueur est banni
+    // 🔒 Vérifier si le joueur est banni
     if (table.bannedPlayers.includes(userId)) {
       return res.status(403).json({ message: "Ce joueur est banni de la table" });
     }
 
-    // Vérifier si le joueur est déjà dans la table
-    const isAlreadyInTable = table.players.some(player => player.userId.toString() === userId);
-    if (!isAlreadyInTable) {
-      table.players.push({ userId, playerName, selectedCharacter });
-      await table.save();
+    // 🔍 Vérifier si le joueur est déjà dans la table
+    const existingPlayerIndex = table.players.findIndex(
+      (player) => player.userId.toString() === userId
+    );
+
+    // ✅ Si le joueur est présent, vérifier l'état de son personnage
+    if (existingPlayerIndex !== -1) {
+      const existingPlayer = table.players[existingPlayerIndex];
+      const characterExists = await Character.findById(existingPlayer.selectedCharacter);
+
+      if (!characterExists) {
+        // 🧹 Supprimer l'ancien enregistrement si le personnage n'existe plus
+        table.players.splice(existingPlayerIndex, 1);
+      } else {
+        return res.status(400).json({ message: "Le joueur est déjà présent à la table avec un personnage valide." });
+      }
     }
 
-    // Ajouter la table à `tablesJoined` du joueur
+    // 🔐 Vérifie que le personnage existe toujours avant ajout
+    const characterStillExists = await Character.findById(selectedCharacter);
+    if (!characterStillExists) {
+      return res.status(404).json({ message: "Le personnage sélectionné est introuvable." });
+    }
+
+    // 🧠 Récupérer l'utilisateur pour le nom
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
+
+    // ➕ Ajouter le joueur avec le nouveau personnage
+    table.players.push({
+      userId,
+      playerName: user.userPseudo,
+      selectedCharacter,
+      isGameMaster: false,
+    });
+
+    await table.save();
+
+    // ➕ Ajouter la table dans `tablesJoined` s'il ne l'a pas déjà
     await User.findByIdAndUpdate(userId, { $addToSet: { tablesJoined: tableId } });
 
-    res.status(200).json({ message: "Joueur ajouté à la table" });
+    res.status(200).json({ message: "Joueur ajouté avec succès." });
   } catch (error) {
-    console.error(error);
+    console.error("❌ Erreur lors de l'ajout du joueur:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // 📌 Supprimer une table
 exports.deleteTable = async (req, res) => {
