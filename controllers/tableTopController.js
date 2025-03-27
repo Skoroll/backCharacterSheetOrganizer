@@ -91,45 +91,34 @@ exports.verifyPassword = async (req, res) => {
 
 // 📌 Ajouter un joueur à une table
 exports.addPlayer = async (req, res) => {
+  const { tableId } = req.params;
+  const { userId, playerName, selectedCharacter } = req.body;
+
   try {
-    const { selectedCharacterId } = req.body;
-    const { tableId } = req.params;
-
-    const userId = req.user.id;
-    const userName = req.user.name;
-
     const table = await TableTop.findById(tableId);
-    if (!table) {
-      return res.status(404).json({ error: "Table non trouvée." });
+    if (!table) return res.status(404).json({ message: "Table introuvable" });
+
+    // Vérifier si le joueur est banni
+    if (table.bannedPlayers.includes(userId)) {
+      return res.status(403).json({ message: "Ce joueur est banni de la table" });
     }
 
-    const existingPlayer = table.players.find((p) => p.userId.equals(userId));
-    if (existingPlayer) {
-      const characterExists = await Character.findById(existingPlayer.selectedCharacter);
-      if (!characterExists) {
-        table.players = table.players.filter((p) => !p.userId.equals(userId));
-      } else {
-        return res.status(400).json({ error: "Le joueur est déjà présent à la table avec un personnage." });
-      }
+    // Vérifier si le joueur est déjà dans la table
+    const isAlreadyInTable = table.players.some(player => player.userId.toString() === userId);
+    if (!isAlreadyInTable) {
+      table.players.push({ userId, playerName, selectedCharacter });
+      await table.save();
     }
 
-    const newPlayer = {
-      userId,
-      playerName: userName,
-      selectedCharacter: selectedCharacterId,
-      isGameMaster: false,
-    };
+    // Ajouter la table à `tablesJoined` du joueur
+    await User.findByIdAndUpdate(userId, { $addToSet: { tablesJoined: tableId } });
 
-    table.players.push(newPlayer);
-    await table.save();
-
-    return res.status(200).json({ message: "Joueur ajouté avec succès.", player: newPlayer });
-  } catch (err) {
-    console.error(err);
-    return res.status(500).json({ error: "Une erreur est survenue lors de l'ajout du joueur." });
+    res.status(200).json({ message: "Joueur ajouté à la table" });
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
-
 
 // 📌 Supprimer une table
 exports.deleteTable = async (req, res) => {
