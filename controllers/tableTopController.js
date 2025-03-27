@@ -104,10 +104,23 @@ exports.addPlayer = async (req, res) => {
     }
 
     // Vérifier si le joueur est déjà dans la table
-    const isAlreadyInTable = table.players.some(player => player.userId.toString() === userId);
-    if (isAlreadyInTable) {
-      return res.status(200).json({ message: "Joueur déjà présent dans la table" });
+    const existingPlayerIndex = table.players.findIndex(player => player.userId.toString() === userId);
+
+    if (existingPlayerIndex !== -1) {
+      // ✅ Met à jour le personnage si le joueur est déjà dans la table
+      table.players[existingPlayerIndex].selectedCharacter = selectedCharacter;
+    } else {
+      // ✅ Sinon ajoute un nouveau joueur
+      const isGameMaster = table.gameMaster.toString() === userId;
+    
+      table.players.push({
+        userId,
+        playerName,
+        selectedCharacter: isGameMaster ? null : selectedCharacter,
+        isGameMaster,
+      });
     }
+    
 
     // Vérifier s'il s'agit du MJ
     const isGameMaster = table.gameMaster.toString() === userId;
