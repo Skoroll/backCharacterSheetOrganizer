@@ -4,6 +4,7 @@ const bcrypt = require('bcryptjs');
 const fs = require("fs");
 const path = require("path"); // ✅ Ajout de l'import path
 const cloudinary = require("cloudinary").v2;
+const Character = require("../models/characterModel");
 
 
 // 📌 Créer une nouvelle table
