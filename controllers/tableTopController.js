@@ -92,52 +92,45 @@ exports.verifyPassword = async (req, res) => {
 // 📌 Ajouter un joueur à une table
 exports.addPlayer = async (req, res) => {
   try {
-      // Récupération des paramètres depuis la requête (ID de la table et ID du personnage choisi)
-      const { tableId, selectedCharacterId } = req.body;
-      const userId = req.user.id;   // ID de l'utilisateur (fourni via l'authentification)
-      const userName = req.user.name; // Nom du joueur (pour renseigner playerName)
-      
-      // 1. Vérifier l'existence de la table ciblée dans la base de données
-      const table = await TableTop.findById(tableId);
-      if (!table) {
-          return res.status(404).json({ error: "Table non trouvée." });
+    const { selectedCharacterId } = req.body;
+    const { tableId } = req.params;
+
+    const userId = req.user.id;
+    const userName = req.user.name;
+
+    const table = await TableTop.findById(tableId);
+    if (!table) {
+      return res.status(404).json({ error: "Table non trouvée." });
+    }
+
+    const existingPlayer = table.players.find((p) => p.userId.equals(userId));
+    if (existingPlayer) {
+      const characterExists = await Character.findById(existingPlayer.selectedCharacter);
+      if (!characterExists) {
+        table.players = table.players.filter((p) => !p.userId.equals(userId));
+      } else {
+        return res.status(400).json({ error: "Le joueur est déjà présent à la table avec un personnage." });
       }
-      
-      // 2. Vérifier si l'utilisateur est déjà présent dans la liste des joueurs de cette table
-      const existingPlayer = table.players.find(p => p.userId.equals(userId));
-      if (existingPlayer) {
-          // 2a. Si présent, vérifier si le personnage associé a été supprimé de la base de données
-          const characterExists = await Character.findById(existingPlayer.selectedCharacter);
-          if (!characterExists) {
-              // 2b. Si le personnage n'existe plus, supprimer l'ancien enregistrement du joueur de la table
-              table.players = table.players.filter(p => !p.userId.equals(userId));
-          } else {
-              // 2c. Si le joueur est déjà présent avec un personnage valide, empêcher un doublon et retourner une erreur
-              return res.status(400).json({ error: "Le joueur est déjà présent à la table avec un personnage." });
-          }
-      }
-      
-      // 3. Créer le nouvel objet joueur à ajouter avec le nouveau personnage sélectionné
-      const newPlayer = {
-          userId: userId,
-          playerName: userName,
-          selectedCharacter: selectedCharacterId,
-          isGameMaster: false
-      };
-      // 4. Ajouter le nouveau joueur dans la liste des joueurs de la table
-      table.players.push(newPlayer);
-      
-      // 5. Enregistrer les modifications de la table dans la base de données
-      await table.save();
-      
-      // 6. Retourner une réponse de succès claire avec un message explicite
-      return res.status(200).json({ message: "Joueur ajouté avec succès.", player: newPlayer });
+    }
+
+    const newPlayer = {
+      userId,
+      playerName: userName,
+      selectedCharacter: selectedCharacterId,
+      isGameMaster: false,
+    };
+
+    table.players.push(newPlayer);
+    await table.save();
+
+    return res.status(200).json({ message: "Joueur ajouté avec succès.", player: newPlayer });
   } catch (err) {
-      // 7. Gérer les erreurs et retourner une réponse d'échec appropriée
-      console.error(err);
-      return res.status(500).json({ error: "Une erreur est survenue lors de l'ajout du joueur." });
+    console.error(err);
+    return res.status(500).json({ error: "Une erreur est survenue lors de l'ajout du joueur." });
   }
 };
+
+
 // 📌 Supprimer une table
 exports.deleteTable = async (req, res) => {
   const tableId = req.params.id;
