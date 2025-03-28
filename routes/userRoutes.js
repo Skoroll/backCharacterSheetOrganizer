@@ -21,4 +21,7 @@ router.post("/reset-password/:token", userController.resetPasswordRequest);
 router.post("/refresh-token", userController.refreshToken);
 router.post('/logout', authMiddleware.protect, userController.logout);
 
+//Retire les tables inexistantes d'un utilisateur
+router.patch("/removeTable/:tableId", authMiddleware.protect, userController.removeTableFromUser);
+
 module.exports = router;

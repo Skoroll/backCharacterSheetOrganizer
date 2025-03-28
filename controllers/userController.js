@@ -371,3 +371,19 @@ exports.logout = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+exports.removeTableFromUser = async (req, res) => {
+  const userId = req.user.id; // depuis le token
+  const { tableId } = req.params;
+
+  try {
+    await User.findByIdAndUpdate(userId, {
+      $pull: { tablesJoined: tableId },
+    });
+
+    res.status(200).json({ message: "Table retirée du profil utilisateur" });
+  } catch (err) {
+    console.error("❌ Erreur suppression table du profil :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

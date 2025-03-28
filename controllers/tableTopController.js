@@ -45,7 +45,7 @@ exports.tableCreate = async (req, res) => {
 // 📌 Récupérer toutes les tables avec les joueurs
 exports.getTables = async (req, res) => {
   try {
-    const tables = await TableTop.find({}, "name game players")
+    const tables = await TableTop.find({}, "name game players gameMasterName bannerImage")
       .populate('players.userId', 'playerName selectedCharacter')
       .exec();
 
