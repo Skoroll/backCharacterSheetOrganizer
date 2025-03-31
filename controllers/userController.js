@@ -302,7 +302,7 @@ exports.forgotPassword = async (req, res) => {
     
 
     // Envoyer l'e-mail
-    const resetLink = `${FRONT_URL}/reset-password/${token}`;
+    const resetLink = `${FRONT_URL}reset-password/${token}`;
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
