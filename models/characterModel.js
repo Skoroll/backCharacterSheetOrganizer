@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
 const characterSchema = new mongoose.Schema({
+  game: {type: String, required: true},
   name: { type: String, required: true },
   className: { type: String, required: true },
   age: { type: Number, required: true },

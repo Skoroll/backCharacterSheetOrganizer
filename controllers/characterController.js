@@ -8,6 +8,7 @@ const fs = require("fs");
 const createCharacter = async (req, res) => {
   try {
     const {
+      game,
       name,
       age,
       className,
@@ -58,6 +59,7 @@ const createCharacter = async (req, res) => {
     }
 
     const newCharacter = new Character({
+      game,
       name,
       age,
       className,
