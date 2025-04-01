@@ -36,13 +36,13 @@ const tableTopSchema = new mongoose.Schema({
   ],
 
 
-  //Style de la bannière
+  //Style de la table
   bannerImage: { type: String, default: "" }, 
   borderWidth: { type: String, default: "0px" },
   borderColor: { type: String, default: "#000000" },
   bannerStyle: { type: String, default: "normal" },
-  
-  
+  selectedFont: {type: String, default: ""},
+  tableBG: {type: String, default: ""},
 });
 
 

@@ -45,7 +45,7 @@ exports.tableCreate = async (req, res) => {
 // 📌 Récupérer toutes les tables avec les joueurs
 exports.getTables = async (req, res) => {
   try {
-    const tables = await TableTop.find({}, "name game players gameMasterName bannerImage")
+    const tables = await TableTop.find({}, "name game players gameMasterName bannerImage, selectedFont, tableBG")
       .populate('players.userId', 'playerName selectedCharacter')
       .exec();
 
@@ -435,7 +435,7 @@ exports.selectCharacterForPlayer = async (req, res) => {
 
 exports.updateTableStyle = async (req, res) => {
   const { id } = req.params;
-  const { borderWidth, borderColor, bannerStyle } = req.body;
+  const { borderWidth, borderColor, bannerStyle, selectedFont, tableBG } = req.body;
   console.log("🧾 req.body :", req.body);
   console.log("📸 req.files :", req.files);
 
@@ -448,11 +448,13 @@ exports.updateTableStyle = async (req, res) => {
 
     console.log("🔹 Table trouvée :", table);
 
-    // Si aucun fichier → juste mise à jour des styles simples
+    // Si aucun fichier → mise à jour simple
     if (!req.files || req.files.length === 0) {
       table.borderWidth = borderWidth || table.borderWidth;
       table.borderColor = borderColor || table.borderColor;
       table.bannerStyle = bannerStyle || table.bannerStyle;
+      table.selectedFont = selectedFont || table.selectedFont;
+      table.tableBG = tableBG || table.tableBG;
 
       const updatedTable = await table.save();
       console.log("✅ Style (sans image) mis à jour :", updatedTable);
@@ -461,8 +463,8 @@ exports.updateTableStyle = async (req, res) => {
 
     const file = req.files[0];
 
-    // 🔥 Supprimer l’ancienne image Cloudinary si elle existe
-    if (table.bannerImage && table.bannerImage.includes("res.cloudinary.com")) {
+    // 🔥 Supprimer l’ancienne image Cloudinary
+    if (table.bannerImage?.includes("res.cloudinary.com")) {
       const segments = table.bannerImage.split("/");
       const publicId = `tableBanner/${segments[segments.length - 1].split(".")[0]}`;
 
@@ -475,7 +477,7 @@ exports.updateTableStyle = async (req, res) => {
       }
     }
 
-    // ✅ Upload vers Cloudinary avec upload_stream
+    // ✅ Upload Cloudinary
     const uploadStream = cloudinary.uploader.upload_stream(
       {
         folder: "tableBanner",
@@ -493,6 +495,8 @@ exports.updateTableStyle = async (req, res) => {
         table.borderWidth = borderWidth || table.borderWidth;
         table.borderColor = borderColor || table.borderColor;
         table.bannerStyle = bannerStyle || table.bannerStyle;
+        table.selectedFont = selectedFont || table.selectedFont;
+        table.tableBG = tableBG || table.tableBG;
 
         const updatedTable = await table.save();
         console.log("✅ Style de table mis à jour avec image :", updatedTable);
@@ -500,7 +504,6 @@ exports.updateTableStyle = async (req, res) => {
       }
     );
 
-    // Envoie le buffer vers le stream
     uploadStream.end(file.buffer);
   } catch (error) {
     console.error("❌ Erreur updateTableStyle :", error);
