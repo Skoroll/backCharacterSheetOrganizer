@@ -27,7 +27,7 @@ const uploadToCloudinary = (buffer, filename) => {
 
 exports.uploadFile = async (req, res) => {
   try {
-    const { tableId, title, text } = req.body;
+    const { tableId, title, text, textFont } = req.body;
     if (!tableId) {
       return res.status(400).json({ message: "ID de table requis." });
     }
@@ -41,6 +41,7 @@ exports.uploadFile = async (req, res) => {
         type: "text",
         title: title || `Texte-${Date.now()}`,
         filename: title || `text-${Date.now()}`,
+        textFont: textFont || "",
         content: text,
       });
 

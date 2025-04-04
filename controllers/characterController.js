@@ -182,13 +182,31 @@ const updateCharacter = async (req, res) => {
 // 📌 Supprimer un personnage
 const deleteCharacter = async (req, res) => {
   try {
-    const deletedCharacter = await Character.findByIdAndDelete(req.params.id);
-    if (!deletedCharacter) {
+    const character = await Character.findById(req.params.id);
+    if (!character) {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
+
+    // ✅ Supprimer l'image de Cloudinary si elle existe
+    if (character.image) {
+      try {
+        const segments = character.image.split('/');
+        const filename = segments[segments.length - 1];
+        const publicId = `characterPictures/${filename.substring(0, filename.lastIndexOf('.'))}`;
+        
+        const result = await cloudinary.uploader.destroy(publicId);
+      } catch (err) {
+        console.warn("⚠️ Impossible de supprimer l'image Cloudinary :", err);
+      }
+    }
+
+    // ✅ Supprimer le personnage de la base de données
+    await character.deleteOne();
+
     res.status(200).json({ message: "Personnage supprimé avec succès" });
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    console.error("❌ Erreur lors de la suppression du personnage :", error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
