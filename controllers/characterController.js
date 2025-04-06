@@ -26,6 +26,7 @@ const createCharacter = async (req, res) => {
       cons,
       origin,
       baseSkills,
+      weapons
     } = req.body;
 
     const defaultBaseSkills = [
@@ -39,10 +40,11 @@ const createCharacter = async (req, res) => {
     const parsedSkills = req.body.skills ? JSON.parse(req.body.skills) : [];
     const parsedInventory = req.body.inventory ? JSON.parse(req.body.inventory) : [];
     const parsedBaseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : defaultBaseSkills;
+    const parsedWeapons = req.body.weapons ? JSON.parse(req.body.weapons) : [];
 
     let uploadedImageUrl = "";
 
-    // ✅ Upload image vers Cloudinary si présente
+    // Upload image vers Cloudinary si présente
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "characterPictures",
@@ -54,7 +56,7 @@ const createCharacter = async (req, res) => {
       
       uploadedImageUrl = result.secure_url;
 
-      // 🧹 Supprimer le fichier local temporaire
+      // Supprimer le fichier local temporaire
       fs.unlinkSync(req.file.path);
     }
 
@@ -63,7 +65,7 @@ const createCharacter = async (req, res) => {
       name,
       age,
       className,
-      image: uploadedImageUrl, // ✅ URL Cloudinary ici
+      image: uploadedImageUrl, // URL Cloudinary ici
       strength,
       dexterity,
       endurance,
@@ -80,18 +82,19 @@ const createCharacter = async (req, res) => {
       baseSkills: parsedBaseSkills,
       skills: parsedSkills,
       inventory: parsedInventory,
+      weapons: parsedWeapons,
       userId: req.user.id,
     });
 
     await newCharacter.save();
     res.status(201).json({ message: "Personnage créé avec succès", character: newCharacter });
   } catch (error) {
-    console.error("❌ Erreur lors de la création du personnage:", error);
+    console.error("Erreur lors de la création du personnage:", error);
     res.status(500).json({ message: "Erreur interne du serveur" });
   }
 };
 
-// 📌 Récupérer un personnage par son ID
+// Récupérer un personnage par son ID
  const getCharacterById = async (req, res) => {
   try {
     const character = await Character.findById(req.params.id);
@@ -104,7 +107,7 @@ const createCharacter = async (req, res) => {
   }
 };
 
-// 📌 Récupérer tous les personnages
+// Récupérer tous les personnages
 const getAllCharacters = async (req, res) => {
   try {
     const characters = await Character.find();
@@ -114,12 +117,12 @@ const getAllCharacters = async (req, res) => {
   }
 };
 
-// 📌 Mettre à jour un personnage
+// Mettre à jour un personnage
 function tryParse(value) {
   try {
     return typeof value === "string" ? JSON.parse(value) : value;
   } catch (err) {
-    console.warn("⚠️ JSON parse failed:", value);
+    console.warn("JSON parse failed:", value);
     return value;
   }
 }
@@ -127,7 +130,7 @@ function tryParse(value) {
 // Met à jour un personnage
 const updateCharacter = async (req, res) => {
   try {
-    console.log("🔍 Données reçues :", req.body);
+    console.log("Données reçues :", req.body);
 
     const { baseSkills } = req.body;
 
@@ -174,12 +177,12 @@ const updateCharacter = async (req, res) => {
 
     res.status(200).json(updatedCharacter);
   } catch (error) {
-    console.error("❌ Erreur mise à jour personnage:", error);
+    console.error("Erreur mise à jour personnage:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-// 📌 Supprimer un personnage
+// Supprimer un personnage
 const deleteCharacter = async (req, res) => {
   try {
     const character = await Character.findById(req.params.id);
@@ -187,7 +190,7 @@ const deleteCharacter = async (req, res) => {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
 
-    // ✅ Supprimer l'image de Cloudinary si elle existe
+    // Supprimer l'image de Cloudinary si elle existe
     if (character.image) {
       try {
         const segments = character.image.split('/');
@@ -196,21 +199,21 @@ const deleteCharacter = async (req, res) => {
         
         const result = await cloudinary.uploader.destroy(publicId);
       } catch (err) {
-        console.warn("⚠️ Impossible de supprimer l'image Cloudinary :", err);
+        console.warn("Impossible de supprimer l'image Cloudinary :", err);
       }
     }
 
-    // ✅ Supprimer le personnage de la base de données
+    // Supprimer le personnage de la base de données
     await character.deleteOne();
 
     res.status(200).json({ message: "Personnage supprimé avec succès" });
   } catch (error) {
-    console.error("❌ Erreur lors de la suppression du personnage :", error);
+    console.error("Erreur lors de la suppression du personnage :", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
-// 📌 Récupérer les personnages d'un utilisateur spécifique (authentifié)
+// Récupérer les personnages d'un utilisateur spécifique (authentifié)
 const getUserCharacters = async (req, res) => {
   try {
     
@@ -223,7 +226,7 @@ const getUserCharacters = async (req, res) => {
 
     res.status(200).json(characters);
   } catch (error) {
-    console.error("🔴 Erreur dans getUserCharacters :", error);
+    console.error("Erreur dans getUserCharacters :", error);
     res.status(500).json({ message: error.message });
   }
 };
@@ -242,14 +245,14 @@ const getCharactersByUser = async (req, res) => {
 
     res.status(200).json({ characters });
   } catch (error) {
-    console.error("❌ Erreur lors de la récupération des personnages:", error);
+    console.error("Erreur lors de la récupération des personnages:", error);
     res.status(500).json({ message: "Erreur interne du serveur", error });
   }
 };
 
 const updateHealth = async (req, res) => {
   try {
-    console.log("📥 Requête reçue pour updateHealth :", req.body);
+    console.log("Requête reçue pour updateHealth :", req.body);
 
     const { pointsOfLife, tableId } = req.body; // Ajout de `tableId`
     
@@ -261,47 +264,47 @@ const updateHealth = async (req, res) => {
       return res.status(400).json({ message: "Le champ tableId est requis" });
     }
 
-    // 🔍 Récupérer le personnage
+    // Récupérer le personnage
     const character = await Character.findById(req.params.id);
     if (!character) {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
 
-    // ✅ Vérifier si le personnage appartient bien à cette table
+    // Vérifier si le personnage appartient bien à cette table
     if (!character.tableIds.includes(tableId)) {
-      console.warn(`⚠️ Le personnage ${character._id} ne fait pas partie de cette table. Ajout en cours...`);
+      console.warn(`Le personnage ${character._id} ne fait pas partie de cette table. Ajout en cours...`);
 
-      // 🔍 Trouver la table contenant ce personnage
+      // Trouver la table contenant ce personnage
       const table = await TableTop.findOne({ "players.selectedCharacter": character._id });
 
       if (table) {
-        console.log(`✅ Table trouvée : ${table._id}`);
+        console.log(`Table trouvée : ${table._id}`);
 
-        // 🔹 Ajouter cette table à la liste des tables du personnage si elle n'existe pas
+        // Ajouter cette table à la liste des tables du personnage si elle n'existe pas
         if (!character.tableIds.includes(table._id)) {
           character.tableIds.push(table._id);
           await character.save();
         }
       } else {
-        console.error(`❌ Impossible de trouver une table associée au personnage ${character._id}`);
+        console.error(`Impossible de trouver une table associée au personnage ${character._id}`);
         return res.status(400).json({ message: "Ce personnage n'est pas associé à une table" });
       }
     }
 
-    console.log(`🔍 Table ID final utilisé : ${tableId}`);
+    console.log(`Table ID final utilisé : ${tableId}`);
 
-    // ✅ Mettre à jour les PV
+    // Mettre à jour les PV
     character.pointsOfLife = pointsOfLife;
     await character.save();
 
-    // ✅ Vérifier si l'instance de socket.io est bien récupérée
+    // Vérifier si l'instance de socket.io est bien récupérée
     const io = req.app.get("io");
     if (!io) {
-      console.error("❌ ERREUR : io non trouvé dans req.app !");
+      console.error("ERREUR : io non trouvé dans req.app !");
       return res.status(500).json({ message: "Erreur serveur : io non défini" });
     }
 
-    // ✅ Émettre l'événement à la bonne salle "table-{tableId}"
+    // Émettre l'événement à la bonne salle "table-{tableId}"
     console.log(`📡 Emission de "updateHealth" à table-${tableId}`);
     io.to(`table-${tableId}`).emit("updateHealth", {
       characterId: character._id,
@@ -310,7 +313,7 @@ const updateHealth = async (req, res) => {
 
     res.json(character);
   } catch (error) {
-    console.error("❌ Erreur mise à jour des PV :", error);
+    console.error("Erreur mise à jour des PV :", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
