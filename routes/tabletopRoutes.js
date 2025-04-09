@@ -22,9 +22,8 @@ router.get("/tables/:id/player-notes", tableController.getPlayerNotes);
 router.get('/tables', tableController.getTables);
 router.get("/tables/:id/notes", tableController.getGameMasterNotes);
 router.put("/tables/:id/style", uploadGmFile.array("bannerImage", 1), tableController.updateTableStyle);
-
-
-
+router.get("/tables/:tableId/bannedPlayers", tableController.getBannedPlayers);
+router.delete("/tables/:tableId/unbanPlayer/:userId", tableController.unbanPlayer);
 
 module.exports = router;
 
