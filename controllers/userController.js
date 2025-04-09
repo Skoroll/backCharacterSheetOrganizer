@@ -276,9 +276,10 @@ exports.getUserById = async (req, res) => {
   }
 };
 
-// 📩 **1. Demande de réinitialisation**
+//Demande de réinitialisation**
 exports.forgotPassword = async (req, res) => {
   const { email } = req.body;
+
   try {
     const user = await User.findOne({ email });
     if (!user) return res.status(400).json({ message: "Utilisateur non trouvé." });
@@ -287,38 +288,51 @@ exports.forgotPassword = async (req, res) => {
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
     console.log("🛠️ Token généré :", token);
     console.log("🔑 Clé JWT utilisée :", process.env.JWT_SECRET);
-    
+
     // Configuration de Nodemailer
     const transporter = nodemailer.createTransport({
       service: "gmail",
       auth: {
         user: process.env.EMAIL_USER,
-        pass: process.env.EMAIL_PASS, // ✅ Utilise le mot de passe d'application ici
+        pass: process.env.EMAIL_PASS, // Mot de passe d'application
       },
       tls: {
-        rejectUnauthorized: false, // ✅ Ignore les erreurs SSL si nécessaire
+        rejectUnauthorized: false,
       },
     });
-    
 
-    // Envoyer l'e-mail
+    // Création du lien de réinitialisation
     const resetLink = `${FRONT_URL}reset-password/${token}`;
+
+    // Envoi de l'e-mail
     await transporter.sendMail({
       from: process.env.EMAIL_USER,
       to: email,
       subject: "Réinitialisation de votre mot de passe",
-      text: `Cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`,
-      html: `<p>Cliquez sur <a href="${resetLink}">ce lien</a> pour réinitialiser votre mot de passe.</p>`,
+      text: `Bonjour ${user.name}, cliquez sur ce lien pour réinitialiser votre mot de passe : ${resetLink}`,
+      html: `
+        <p>Bonjour <strong>${user.name}</strong>,</p>
+        <p>Vous avez demandé la réinitialisation de votre mot de passe pour votre compte CritRoller.</p>
+        <p>
+          Cliquez ici pour le réinitialiser : <a href="${resetLink}">${resetLink}</a><br/>
+          Ce lien expirera dans 15 minutes.
+        </p>
+        <p>Si vous n'avez pas fait cette demande, ignorez simplement cet e-mail.</p>
+        <br/>
+        <p>L'équipe <strong>CritRoller</strong></p>
+      `,
     });
 
     res.json({ message: "E-mail de réinitialisation envoyé." });
+
   } catch (error) {
-    console.error("Erreur lors de l'envoi de l'email :", error);
+    console.error("Erreur lors de l'envoi de l'e-mail :", error);
     res.status(500).json({ message: "Erreur serveur." });
   }
 };
 
-// ✅ **2. Vérifier la validité du token**
+
+//Vérifier la validité du token**
 exports.verifyResetToken = async (req, res) => {
   try {
     jwt.verify(req.params.token, SECRET);
@@ -328,7 +342,7 @@ exports.verifyResetToken = async (req, res) => {
   }
 };
 
-// 🔑 **3. Mise à jour du mot de passe**
+// Mise à jour du mot de passe**
 exports.resetPasswordRequest = async (req, res) => {
   const { password } = req.body;
   const { token } = req.params;

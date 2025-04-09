@@ -86,23 +86,31 @@ app.set("io", io);
 io.on("connection", (socket) => {
   socket.onAny((event, ...args) => {
   });
+
+  socket.on("tableStyleUpdated", ({ tableId }) => {
+    io.to(`table-${tableId}`).emit("refreshTableStyle");
+  });
+
   socket.on("joinTable", (tableId) => {
     socket.join(`table-${tableId}`);
   });
+
   socket.on("newMessage", (message) => {
     io.to(`table-${message.tableId}`).emit("newMessage", message);
   });
+
   socket.on("sendMedia", ({ tableId, mediaUrl }) => {
     io.to(`table-${tableId}`).emit("newMedia", mediaUrl);
   });
-  socket.on("sendText", ({ tableId, textContent }) => {
 
-    io.to(`table-${tableId}`).emit("newText", { textContent });
+  socket.on("sendText", ({ tableId, textContent, textFont, textColor, isBG }) => {
+    io.to(`table-${tableId}`).emit("newText", { textContent, textFont, textColor, isBG });
   });
-  socket.on("removeMedia", ({ tableId }) => {
 
+  socket.on("removeMedia", ({ tableId }) => {
     io.to(`table-${tableId}`).emit("removeMedia");
   });
+  
   socket.on("updateHealth", ({ characterId, pointsOfLife, tableId, characterName }) => {
     io.to(`table-${tableId}`).emit("updateHealth", { characterId, pointsOfLife });
     const systemMessage = {

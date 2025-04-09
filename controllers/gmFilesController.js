@@ -27,13 +27,15 @@ const uploadToCloudinary = (buffer, filename) => {
 
 exports.uploadFile = async (req, res) => {
   try {
-    const { tableId, title, text, textFont } = req.body;
+    const { tableId, title, text, textFont, textColor, isBG } = req.body;
     if (!tableId) {
       return res.status(400).json({ message: "ID de table requis." });
     }
 
     const savedFiles = [];
-
+    console.log("🧾 isBG brut reçu :", isBG);
+    console.log("✅ isBG transformé :", isBG === "false" ? false : true);
+    
     // ✅ Texte
     if (text) {
       const newTextFile = new GmFile({
@@ -42,8 +44,11 @@ exports.uploadFile = async (req, res) => {
         title: title || `Texte-${Date.now()}`,
         filename: title || `text-${Date.now()}`,
         textFont: textFont || "",
+        textColor: textColor || "",
+        isBG: isBG === "false" || isBG === false ? false : true,
         content: text,
       });
+      
 
       await newTextFile.save();
       savedFiles.push(newTextFile);

@@ -439,6 +439,8 @@ exports.updateTableStyle = async (req, res) => {
   console.log("🧾 req.body :", req.body);
   console.log("📸 req.files :", req.files);
 
+  const io = req.app.get("io"); // ✅ Récupérer l'instance de Socket.IO
+
   try {
     const table = await TableTop.findById(id);
     if (!table) {
@@ -446,9 +448,6 @@ exports.updateTableStyle = async (req, res) => {
       return res.status(404).json({ message: "Table introuvable" });
     }
 
-    console.log("🔹 Table trouvée :", table);
-
-    // Si aucun fichier → mise à jour simple
     if (!req.files || req.files.length === 0) {
       table.borderWidth = borderWidth || table.borderWidth;
       table.borderColor = borderColor || table.borderColor;
@@ -458,6 +457,8 @@ exports.updateTableStyle = async (req, res) => {
 
       const updatedTable = await table.save();
       console.log("✅ Style (sans image) mis à jour :", updatedTable);
+
+      io.to(`table-${id}`).emit("refreshTableStyle"); // ✅ Emit ici
       return res.status(200).json(updatedTable);
     }
 
@@ -500,6 +501,9 @@ exports.updateTableStyle = async (req, res) => {
 
         const updatedTable = await table.save();
         console.log("✅ Style de table mis à jour avec image :", updatedTable);
+
+        io.to(`table-${id}`).emit("refreshTableStyle"); // ✅ Emit ici aussi
+
         return res.status(200).json(updatedTable);
       }
     );

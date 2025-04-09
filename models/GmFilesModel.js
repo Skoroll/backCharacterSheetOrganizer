@@ -9,6 +9,8 @@ const gmFileSchema = new mongoose.Schema({
   path: { type: String, default: "" },
   createdAt: { type: Date, default: Date.now, expires: "100d" },
   textFont: {type: String, default: ""},
+  textColor: {type: String, default: ""},
+  isBG: { type: Boolean, default: true },
 });
 
 module.exports = mongoose.model("GmFile", gmFileSchema);
