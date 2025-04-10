@@ -8,6 +8,7 @@ const path = require("path");
 const compression = require("compression");
 
 
+const itemRoutes = require("./routes/itemRoutes")
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
 const characterRoutes = require("./routes/characterRoutes");
@@ -128,6 +129,7 @@ io.on("connection", (socket) => {
 app.use(express.json());
 
 // Routes
+app.use("/api/items", itemRoutes);
 app.use("/api/users", userRoutes);
 app.use("/api/characters", characterRoutes);
 app.use("/api/tabletop", tableTopRoutes);
