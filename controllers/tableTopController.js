@@ -1,10 +1,13 @@
 const TableTop = require("../models/tabletopModel");
 const User = require("../models/userModel");
-const bcrypt = require("bcryptjs");
-const fs = require("fs");
-const path = require("path"); // ✅ Ajout de l'import path
-const cloudinary = require("cloudinary").v2;
 const Character = require("../models/characterModel");
+const Item = require("../models/item");
+const Npc = require("../models/npcModel");
+const GmFile = require("../models/GmFilesModel");
+const Message = require("../models/Message");
+const bcrypt = require("bcryptjs");
+const cloudinary = require("cloudinary").v2;
+const mongoose = require("mongoose");
 
 // 📌 Créer une nouvelle table
 exports.tableCreate = async (req, res) => {
@@ -182,6 +185,7 @@ exports.addPlayer = async (req, res) => {
 };
 
 // 📌 Supprimer une table
+// 📌 Supprimer une table et toutes ses ressources associées
 exports.deleteTable = async (req, res) => {
   const tableId = req.params.id;
 
@@ -189,13 +193,66 @@ exports.deleteTable = async (req, res) => {
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
+    // 🔥 Supprimer l'image de bannière Cloudinary si présente
+    if (table.bannerImage?.includes("res.cloudinary.com")) {
+      const segments = table.bannerImage.split("/");
+      const publicId = `tableBanner/${segments[segments.length - 1].split(".")[0]}`;
+      try {
+        await cloudinary.uploader.destroy(publicId);
+        console.log("🗑️ Bannière supprimée de Cloudinary :", publicId);
+      } catch (err) {
+        console.warn("⚠️ Échec suppression bannière Cloudinary :", err.message);
+      }
+    }
+
+    // 🗑️ Supprimer les objets liés à la table
+    await Item.deleteMany({ tableId });
+
+    // 🗑️ Supprimer les messages liés à la table
+    await Message.deleteMany({ tableId });
+
+    // 🗑️ Supprimer les fichiers du MJ liés à la table + leurs images sur Cloudinary
+    const gmFiles = await GmFile.find({ tableId });
+    for (const file of gmFiles) {
+      if (file.type === "image" && file.path?.includes("res.cloudinary.com")) {
+        const segments = file.path.split("/");
+        const publicId = `gmAssets/${segments[segments.length - 1].split(".")[0]}`;
+        try {
+          await cloudinary.uploader.destroy(publicId);
+          console.log("🗑️ Fichier MJ supprimé de Cloudinary :", publicId);
+        } catch (err) {
+          console.warn("⚠️ Échec suppression image MJ :", err.message);
+        }
+      }
+    }
+    await GmFile.deleteMany({ tableId });
+
+    // 🗑️ Supprimer les PNJs + leurs images sur Cloudinary
+    const npcs = await Npc.find({ tableId });
+    for (const npc of npcs) {
+      if (npc.image?.includes("res.cloudinary.com")) {
+        const segments = npc.image.split("/");
+        const publicId = `npcs/${segments[segments.length - 1].split(".")[0]}`;
+        try {
+          await cloudinary.uploader.destroy(publicId);
+          console.log("🗑️ Image PNJ supprimée de Cloudinary :", publicId);
+        } catch (err) {
+          console.warn("⚠️ Échec suppression image PNJ :", err.message);
+        }
+      }
+    }
+    await Npc.deleteMany({ tableId });
+
+    // ❌ Supprimer la table elle-même
     await table.deleteOne();
-    res.status(200).json({ message: "Table supprimée avec succès" });
+
+    res.status(200).json({ message: "Table et ressources supprimées avec succès" });
   } catch (error) {
-    console.error("Erreur lors de la suppression de la table", error);
+    console.error("Erreur lors de la suppression de la table et des ressources", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // 📌 Mettre à jour les notes du MJ
 exports.updateNotes = async (req, res) => {

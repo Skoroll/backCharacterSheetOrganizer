@@ -1,6 +1,9 @@
 const Item = require("../models/item");
 
 exports.createItem = async (req, res) => {
+  if (!req.body.tableId) {
+    return res.status(400).json({ message: "ID de table manquant" });
+  }
   try {
     const item = new Item(req.body);
     await item.save();
@@ -11,14 +14,20 @@ exports.createItem = async (req, res) => {
   }
 };
 
-exports.getItems = async (_req, res) => {
+exports.getItems = async (req, res) => {
   try {
-    const items = await Item.find();
+    const { tableId } = req.query;
+    if (!tableId) {
+      return res.status(400).json({ message: "ID de table requis" });
+    }
+
+    const items = await Item.find({ tableId });
     res.json(items);
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de la récupération", err });
   }
 };
+
 
 exports.deleteItem = async (req, res) => {
   try {

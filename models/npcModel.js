@@ -3,7 +3,9 @@ const mongoose = require("mongoose");
 const NpcSchema = new mongoose.Schema({
   tableId: { type: mongoose.Schema.Types.ObjectId, ref: "Table", required: true },
   type: { type: String, enum: ["Friendly", "Hostile"], required: true },
+  image: {type: String, required: false},
   name: { type: String, required: true },
+  location: {type: String, required: false},
   age: { type: Number, required: false },
   strength: { type: Number, required: false },
   dexterity: { type: Number, required: false },

@@ -1,9 +1,9 @@
 const express = require("express");
+const router = express.Router();
+const { uploadGmFile } = require("../middlewares/multer-config");
 const npcController = require("../controllers/npcController");
 
-const router = express.Router();
-
-router.post("/npcs", npcController.createNpc);
+router.post("/npcs", uploadGmFile.single("image"), npcController.createNpc);
 router.get("/npcs/:tableId", npcController.getNpcsByTable);
 router.delete("/npcs/:id", npcController.deleteNpc);
 module.exports = router;

@@ -122,6 +122,12 @@ io.on("connection", (socket) => {
     };
     io.to(`table-${tableId}`).emit("newMessage", systemMessage);
   });
+
+  socket.on("sendNpcToDisplay", (npc) => {
+    console.log("🧙 PNJ reçu côté serveur :", npc);
+    io.to(`table-${npc.tableId}`).emit("sendNpcToDisplay", npc); 
+  });
+  
   socket.on("disconnect", () => {
   });
 });
