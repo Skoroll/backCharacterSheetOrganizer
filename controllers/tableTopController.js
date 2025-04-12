@@ -258,6 +258,7 @@ exports.deleteTable = async (req, res) => {
 exports.updateNotes = async (req, res) => {
   const { id } = req.params;
   console.log("🛠 updateNotes appelée avec ID :", id);
+  console.log("🧾 Contenu de req.body :", req.body); // 👈 AJOUT ICI
 
   const { characters, quest, other, items } = req.body;
 
@@ -298,6 +299,7 @@ exports.getGameMasterNotes = async (req, res) => {
 exports.updatePlayerNotes = async (req, res) => {
   const { id } = req.params; // ID de la table
   const { playerId, characters, quest, other, items } = req.body;
+  console.log("🧾 Reçu :", req.body);
 
   try {
     const table = await TableTop.findById(id);

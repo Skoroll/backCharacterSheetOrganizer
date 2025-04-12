@@ -42,6 +42,8 @@ const allowedOrigins = new Set([
   "http://localhost:5173"
 ]);
 
+app.use(express.json());
+
 app.use((req, res, next) => {
   const origin = req.headers.origin;
   if (origin && allowedOrigins.has(origin)) {
@@ -132,7 +134,7 @@ io.on("connection", (socket) => {
   });
 });
 
-app.use(express.json());
+
 
 // Routes
 app.use("/api/items", itemRoutes);

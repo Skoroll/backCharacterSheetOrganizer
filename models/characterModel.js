@@ -18,8 +18,9 @@ const characterSchema = new mongoose.Schema({
   cons: { type: String, required: true },
   pros: { type: String, required: true },
   origin: { type: String, required: true },
+  ariaMagic: {type: Boolean, required: true, default: false}, //A implémenter
 
-  // 🔥 Ajout des compétences basiques pour stockage
+  //Ajout des compétences basiques pour stockage
   baseSkills: [{
     name: { type: String, required: true },
     link1: { type: String, required: true },
@@ -27,7 +28,7 @@ const characterSchema = new mongoose.Schema({
     bonusMalus: { type: Number, default: 0, required: false }
   }],
 
-  // 🔥 Compétences spéciales
+  // Compétences spéciales
   skills: [{
     specialSkill: { type: String, required: false },
     link1: { type: String, required: false },
