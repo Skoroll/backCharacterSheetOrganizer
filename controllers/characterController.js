@@ -1,11 +1,37 @@
 const Character = require("../models/characterModel");
+const getCharacterModel = require("../utils/getCharacterModel");
 const TableTop = require("../models/tabletopModel");
-const Message = require("../models/Message");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
+const allModels = [
+  require("../models/characterModel"),
+  require("../models/characterVtmModel"),
+];
 
 // 📌 Créer un personnage avec image
 const createCharacter = async (req, res) => {
+  const gameSystem = req.body.game;
+  if (!gameSystem)
+    return res.status(400).json({ message: "Champ 'game' requis." });
+
+  const Character = getCharacterModel(gameSystem);
+  const imagePath = req.file?.path;
+
+  try {
+    const newCharacter = await Character.create({
+      ...req.body,
+      userId: req.user._id,
+      image: imagePath || null,
+    });
+
+    res.status(201).json(newCharacter);
+  } catch (error) {
+    console.error("Erreur createCharacter :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+const createCharacterAria = async (req, res) => {
   try {
     const {
       game,
@@ -25,8 +51,6 @@ const createCharacter = async (req, res) => {
       pros,
       cons,
       origin,
-      baseSkills,
-      weapons
     } = req.body;
 
     const defaultBaseSkills = [
@@ -44,19 +68,16 @@ const createCharacter = async (req, res) => {
 
     let uploadedImageUrl = "";
 
-    // Upload image vers Cloudinary si présente
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "characterPictures",
         width: 260,
         height: 260,
-        crop: "fill",     // Remplit exactement 260x260 en rognant si nécessaire
-        format: "webp",   // Convertit en .webp
+        crop: "fill",
+        format: "webp",
       });
-      
-      uploadedImageUrl = result.secure_url;
 
-      // Supprimer le fichier local temporaire
+      uploadedImageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
 
@@ -65,7 +86,7 @@ const createCharacter = async (req, res) => {
       name,
       age,
       className,
-      image: uploadedImageUrl, // URL Cloudinary ici
+      image: uploadedImageUrl,
       strength,
       dexterity,
       endurance,
@@ -89,7 +110,7 @@ const createCharacter = async (req, res) => {
     await newCharacter.save();
     res.status(201).json({ message: "Personnage créé avec succès", character: newCharacter });
   } catch (error) {
-    console.error("Erreur lors de la création du personnage:", error);
+    console.error("Erreur lors de la création du personnage Aria :", error);
     res.status(500).json({ message: "Erreur interne du serveur" });
   }
 };
@@ -110,12 +131,16 @@ const createCharacter = async (req, res) => {
 // Récupérer tous les personnages
 const getAllCharacters = async (req, res) => {
   try {
-    const characters = await Character.find();
-    res.status(200).json(characters);
+    const results = await Promise.all(
+      allModels.map((Model) => Model.find({}))
+    );
+    const allCharacters = results.flat();
+    res.json(allCharacters);
   } catch (error) {
-    res.status(500).json({ message: error.message });
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // Mettre à jour un personnage
 function tryParse(value) {
@@ -215,19 +240,15 @@ const deleteCharacter = async (req, res) => {
 
 // Récupérer les personnages d'un utilisateur spécifique (authentifié)
 const getUserCharacters = async (req, res) => {
+  const gameSystem = req.query.game || "aria"; // ?game=vtm
+  const Character = getCharacterModel(gameSystem);
+
   try {
-    
-    if (!req.user || !req.user.id) {
-      return res.status(401).json({ message: "Utilisateur non authentifié" });
-    }
-
-    const userId = req.user.id;
-    const characters = await Character.find({ userId });
-
-    res.status(200).json(characters);
+    const characters = await Character.find({ userId: req.user._id });
+    res.json(characters);
   } catch (error) {
-    console.error("Erreur dans getUserCharacters :", error);
-    res.status(500).json({ message: error.message });
+    console.error("Erreur getUserCharacters :", error);
+    res.status(500).json({ message: "Erreur serveur" });
   }
 };
 
@@ -320,6 +341,7 @@ const updateHealth = async (req, res) => {
 
 module.exports = {
   createCharacter,
+  createCharacterAria,
   getCharacterById,
   getAllCharacters,
   updateCharacter,

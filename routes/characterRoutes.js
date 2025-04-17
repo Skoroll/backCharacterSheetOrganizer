@@ -4,6 +4,7 @@ const { protect } = require('../middlewares/authMiddleware');
 
 const { 
   createCharacter,
+  createCharacterAria,
   getAllCharacters,
   getCharacterById,
   updateCharacter,
@@ -29,33 +30,34 @@ const storage = multer.diskStorage({
 const upload = multer({ storage });
 
 
-// 🔹 Route pour récupérer uniquement les personnages de l'utilisateur connecté
+// Route pour récupérer uniquement les personnages de l'utilisateur connecté
 router.get("/user", protect, (req, res, next) => {
 
   next();
 }, getUserCharacters);
 
-// 🔹 Route pour récupérer tous les personnages
+// Route pour récupérer tous les personnages
 router.get("/", (req, res, next) => {
 
   next();
 }, getAllCharacters);
 
-// 🔹 Route pour créer un personnage avec upload de fichier
+// Route pour créer un personnage avec upload de fichier
 router.post("/", protect, upload.single("image"), createCharacter);
+router.post("/aria", protect, upload.single("image"), createCharacterAria);
 
 router.patch("/:id/update-health", updateHealth);
 
-// 🔹 Route pour récupérer un personnage par son ID
+// Route pour récupérer un personnage par son ID
 router.get("/:id", getCharacterById);
 
-// 🔹 Route pour mettre à jour un personnage
+// Route pour mettre à jour un personnage
 router.put("/:id", upload.single("image"), updateCharacter);
 
 router.get("/characters", protect, getCharactersByUser);
 
 
-// 🔹 Route pour supprimer un personnage
+// Route pour supprimer un personnage
 router.delete("/:id", deleteCharacter);
 
 module.exports = router;

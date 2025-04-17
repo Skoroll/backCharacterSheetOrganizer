@@ -675,3 +675,48 @@ exports.unbanPlayer = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+
+// 📌 Un joueur quitte volontairement une table (sans être banni)
+exports.leaveTableAsPlayer = async (req, res) => {
+  const { tableId, userId } = req.params;
+
+  console.log(`🔹 Le joueur ${userId} quitte la table ${tableId}`);
+
+  try {
+    const table = await TableTop.findById(tableId);
+    if (!table) return res.status(404).json({ message: "Table non trouvée" });
+
+    const user = await User.findById(userId);
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+
+    const playerIndex = table.players.findIndex(
+      (p) => p.userId.toString() === userId
+    );
+
+    if (playerIndex === -1) {
+      return res.status(404).json({ message: "Joueur non présent dans la table" });
+    }
+
+    // Supprimer uniquement sans bannir
+    table.players.splice(playerIndex, 1);
+
+    // Supprimer la table de la liste du joueur
+    user.tablesJoined = user.tablesJoined.filter(
+      (tId) => tId.toString() !== tableId
+    );
+
+    await table.save();
+    await user.save();
+
+    // Événement socket
+    const io = req.app.get("io");
+    io.to(`table-${tableId}`).emit("refreshPlayers");
+
+    console.log(`✅ Joueur ${userId} a quitté la table ${tableId} (non banni)`);
+    res.status(200).json({ message: "Vous avez quitté la table." });
+  } catch (error) {
+    console.error("❌ Erreur dans leaveTableAsPlayer :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
