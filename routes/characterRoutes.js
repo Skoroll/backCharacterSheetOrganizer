@@ -3,7 +3,6 @@ const multer = require("multer");
 const { protect } = require('../middlewares/authMiddleware');
 
 const { 
-  createCharacter,
   createCharacterAria,
   getAllCharacters,
   getCharacterById,
@@ -11,7 +10,8 @@ const {
   deleteCharacter,
   getUserCharacters,
   getCharactersByUser,
-  updateHealth
+  updateHealth,
+  drawAriaCard
 } = require('../controllers/characterController');
 
 
@@ -43,7 +43,6 @@ router.get("/", (req, res, next) => {
 }, getAllCharacters);
 
 // Route pour créer un personnage avec upload de fichier
-router.post("/", protect, upload.single("image"), createCharacter);
 router.post("/aria", protect, upload.single("image"), createCharacterAria);
 
 router.patch("/:id/update-health", updateHealth);
@@ -55,6 +54,8 @@ router.get("/:id", getCharacterById);
 router.put("/:id", upload.single("image"), updateCharacter);
 
 router.get("/characters", protect, getCharactersByUser);
+
+router.put("characters/:id/drawAriaCard", drawAriaCard);
 
 
 // Route pour supprimer un personnage

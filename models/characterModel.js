@@ -1,6 +1,7 @@
-const mongoose = require('mongoose');
+const mongoose = require("mongoose");
+const { shuffleDeck } = require("../utils/shuffleDeckAria");
 
-// 🔄 D'abord, le magicSchema
+// Schema des magies
 const magicSchema = new mongoose.Schema({
   ariaMagic: { type: Boolean, default: false },
   deathMagic: { type: Boolean, default: false },
@@ -16,9 +17,12 @@ const magicSchema = new mongoose.Schema({
       message: "deathMagicCount ne peut pas dépasser deathMagicMax.",
     },
   },
+  ariaMagicCards: { type: [String], default: [] },
+  ariaMagicUsedCards: { type: [String], default: [] },  
 });
 
-// Ensuite, le characterSchema
+
+// Schema du personnages
 const characterSchema = new mongoose.Schema({
   game: { type: String, required: true },
   name: { type: String, required: true },
@@ -37,45 +41,62 @@ const characterSchema = new mongoose.Schema({
   cons: { type: String, required: true },
   pros: { type: String, required: true },
   origin: { type: String, required: true },
-  baseSkills: [{
-    name: { type: String, required: true },
-    link1: { type: String, required: true },
-    link2: { type: String, required: true },
-    bonusMalus: { type: Number, default: 0 }
-  }],
-  skills: [{
-    specialSkill: { type: String },
-    link1: { type: String },
-    link2: { type: String },
-    score: { type: Number },
-    bonusMalus: { type: Number, default: 0 }
-  }],
-  weapons: [{
-    name: { type: String },
-    damage: { type: String }
-  }],
-  inventory: [{
-    item: { type: String },
-    quantity: { type: Number }
-  }],
+  baseSkills: [
+    {
+      name: { type: String, required: true },
+      link1: { type: String, required: true },
+      link2: { type: String, required: true },
+      bonusMalus: { type: Number, default: 0 },
+    },
+  ],
+  skills: [
+    {
+      specialSkill: { type: String },
+      link1: { type: String },
+      link2: { type: String },
+      score: { type: Number },
+      bonusMalus: { type: Number, default: 0 },
+    },
+  ],
+  weapons: [
+    {
+      name: { type: String },
+      damage: { type: String },
+    },
+  ],
+  inventory: [
+    {
+      item: { type: String },
+      quantity: { type: Number },
+    },
+  ],
   magic: { type: magicSchema, default: () => ({}) },
   image: { type: String },
   tableIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "TableTop" }],
-  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: "User", required: true },
 });
 
-// Pour gérer les anciens documents qui n’ont pas le champ magic
-characterSchema.pre("save", function (next) {
-  if (!this.magic || typeof this.magic !== "object") {
+characterSchema.pre("validate", function (next) {
+  // Initialise les cartes d'Aria si activé et si le deck est vide
+  if (this.magic?.ariaMagic && (!this.magic.ariaMagicCards || this.magic.ariaMagicCards.length === 0)) {
+    this.magic.ariaMagicCards = shuffleDeck(); // deck de 52 cartes mélangé
+    this.magic.ariaMagicUsedCards = [];
+  }
+
+  // Protection au cas où les champs ne seraient pas définis du tout
+  if (!this.magic) {
     this.magic = {
       ariaMagic: false,
       deathMagic: false,
       deathMagicCount: 0,
       deathMagicMax: 10,
+      ariaMagicCards: [],
+      ariaMagicUsedCards: [],
     };
   }
+
   next();
 });
 
-const Character = mongoose.model('Character', characterSchema);
+const Character = mongoose.model("Character", characterSchema);
 module.exports = Character;

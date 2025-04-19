@@ -94,6 +94,7 @@ io.on("connection", (socket) => {
     io.to(`table-${tableId}`).emit("refreshTableStyle");
   });
 
+  
   socket.on("joinTable", (tableId) => {
     socket.join(`table-${tableId}`);
   });

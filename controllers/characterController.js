@@ -3,34 +3,13 @@ const getCharacterModel = require("../utils/getCharacterModel");
 const TableTop = require("../models/tabletopModel");
 const cloudinary = require("cloudinary").v2;
 const fs = require("fs");
+const shuffleDeck = require("../utils/shuffleDeckAria");
 const allModels = [
   require("../models/characterModel"),
   require("../models/characterVtmModel"),
 ];
 
 // 📌 Créer un personnage avec image
-const createCharacter = async (req, res) => {
-  const gameSystem = req.body.game;
-  if (!gameSystem)
-    return res.status(400).json({ message: "Champ 'game' requis." });
-
-  const Character = getCharacterModel(gameSystem);
-  const imagePath = req.file?.path;
-
-  try {
-    const newCharacter = await Character.create({
-      ...req.body,
-      userId: req.user._id,
-      image: imagePath || null,
-    });
-
-    res.status(201).json(newCharacter);
-  } catch (error) {
-    console.error("Erreur createCharacter :", error);
-    res.status(500).json({ message: "Erreur serveur" });
-  }
-};
-
 const createCharacterAria = async (req, res) => {
   try {
     const {
@@ -67,6 +46,25 @@ const createCharacterAria = async (req, res) => {
     const parsedWeapons = req.body.weapons ? JSON.parse(req.body.weapons) : [];
     let parsedMagic = req.body.magic ? JSON.parse(req.body.magic) : { ariaMagic: false, deathMagic: false };
 
+    //Initialisation complète de la magie d'Aria si activée
+    if (parsedMagic.ariaMagic) {
+      parsedMagic.ariaMagicCards = parsedMagic.ariaMagicCards?.length
+        ? parsedMagic.ariaMagicCards
+        : shuffleDeck();
+    
+      parsedMagic.ariaMagicUsedCards = parsedMagic.ariaMagicUsedCards?.length
+        ? parsedMagic.ariaMagicUsedCards
+        : [];
+    } else {
+      parsedMagic.ariaMagicCards = [];
+      parsedMagic.ariaMagicUsedCards = [];
+    }
+    
+    console.log("✅ Magic envoyé :", parsedMagic);
+console.log("🃏 Cartes d'Aria :", parsedMagic.ariaMagicCards?.length);
+
+
+//Initialise la magie de mort
 if (parsedMagic.deathMagic) {
   parsedMagic.deathMagicMax = parsedMagic.deathMagicMax || 10;
   parsedMagic.deathMagicCount = Math.min(parsedMagic.deathMagicCount || 0, parsedMagic.deathMagicMax);
@@ -175,7 +173,7 @@ const updateCharacter = async (req, res) => {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
 
-    // 🔁 Traitement des données
+    // Traitement des données
     const updatedBaseSkills = Array.isArray(req.body.baseSkills)
       ? req.body.baseSkills.map((skill) => ({
           ...skill,
@@ -196,6 +194,14 @@ const updateCharacter = async (req, res) => {
       uploadedImageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
+if (
+  character.magic &&
+  character.magic.ariaMagic &&
+  (!character.magic.ariaMagicCards || character.magic.ariaMagicCards.length === 0)
+) {
+  character.magic.ariaMagicCards = shuffleDeck();
+  character.magic.ariaMagicUsedCards = [];
+}
 
     const updatedFields = {
       ...req.body,
@@ -213,7 +219,17 @@ const updateCharacter = async (req, res) => {
       character.set(key, updatedFields[key]);
     }
 
-    // ✅ Correction préventive du deathMagicCount
+    // Initialiser le deck d'Aria si besoin
+    if (
+      updatedFields.magic?.ariaMagic &&
+      (!Array.isArray(updatedFields.magic.ariaMagicCards) ||
+        updatedFields.magic.ariaMagicCards.length === 0)
+    ) {
+      updatedFields.magic.ariaMagicCards = shuffleDeck();
+      updatedFields.magic.ariaMagicUsedCards = [];
+    }
+  
+    // Correction préventive du deathMagicCount
     if (
       character.magic &&
       character.magic.deathMagicCount > character.magic.deathMagicMax
@@ -362,8 +378,40 @@ const updateHealth = async (req, res) => {
   }
 };
 
+const drawAriaCard = async (req, res) => {
+  const character = await Character.findById(req.params.id);
+  if (!character || !character.magic.ariaMagic) {
+    return res.status(400).json({ message: "Ce personnage ne peut pas utiliser la magie d'Aria." });
+  }
+
+  // Initialiser le deck s’il est vide
+  if (!character.magic.ariaMagicCards || character.magic.ariaMagicCards.length === 0) {
+    character.magic.ariaMagicCards = shuffleDeck();
+    character.magic.ariaMagicUsedCards = [];
+  }
+
+  const card = character.magic.ariaMagicCards.pop();
+  character.magic.ariaMagicUsedCards.push(card);
+
+  await character.save();
+  res.status(200).json({ card });
+};
+
+const reshuffleAriaDeck = async (req, res) => {
+  const character = await Character.findById(req.params.id);
+  if (!character || !character.magic.ariaMagic) {
+    return res.status(400).json({ message: "Ce personnage ne peut pas utiliser la magie d'Aria." });
+  }
+
+  character.magic.ariaMagicCards = shuffleDeck();
+  character.magic.ariaMagicUsedCards = [];
+
+  await character.save();
+  res.status(200).json({ message: "Deck mélangé" });
+};
+
+
 module.exports = {
-  createCharacter,
   createCharacterAria,
   getCharacterById,
   getAllCharacters,
@@ -372,4 +420,5 @@ module.exports = {
   getUserCharacters,
   getCharactersByUser,
   updateHealth,
+  drawAriaCard,
 }
