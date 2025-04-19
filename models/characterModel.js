@@ -1,7 +1,26 @@
 const mongoose = require('mongoose');
 
+// 🔄 D'abord, le magicSchema
+const magicSchema = new mongoose.Schema({
+  ariaMagic: { type: Boolean, default: false },
+  deathMagic: { type: Boolean, default: false },
+  deathMagicMax: { type: Number, default: 10, min: 0 },
+  deathMagicCount: {
+    type: Number,
+    default: 0,
+    min: 0,
+    validate: {
+      validator: function (value) {
+        return value <= this.deathMagicMax;
+      },
+      message: "deathMagicCount ne peut pas dépasser deathMagicMax.",
+    },
+  },
+});
+
+// Ensuite, le characterSchema
 const characterSchema = new mongoose.Schema({
-  game: {type: String, required: true},
+  game: { type: String, required: true },
   name: { type: String, required: true },
   className: { type: String, required: true },
   age: { type: Number, required: true },
@@ -18,38 +37,44 @@ const characterSchema = new mongoose.Schema({
   cons: { type: String, required: true },
   pros: { type: String, required: true },
   origin: { type: String, required: true },
-  ariaMagic: {type: Boolean, required: true, default: false}, //A implémenter
-
-  //Ajout des compétences basiques pour stockage
   baseSkills: [{
     name: { type: String, required: true },
     link1: { type: String, required: true },
     link2: { type: String, required: true },
-    bonusMalus: { type: Number, default: 0, required: false }
-  }],
-
-  // Compétences spéciales
-  skills: [{
-    specialSkill: { type: String, required: false },
-    link1: { type: String, required: false },
-    link2: { type: String, required: false },
-    score: { type: Number, required: false },
     bonusMalus: { type: Number, default: 0 }
   }],
-
+  skills: [{
+    specialSkill: { type: String },
+    link1: { type: String },
+    link2: { type: String },
+    score: { type: Number },
+    bonusMalus: { type: Number, default: 0 }
+  }],
   weapons: [{
-    name: { type: String, required: false },
-    damage: { type: String, required: false }
+    name: { type: String },
+    damage: { type: String }
   }],
-
   inventory: [{
-    item: { type: String, required: false },
-    quantity: { type: Number, required: false }
+    item: { type: String },
+    quantity: { type: Number }
   }],
-
-  image: { type: String, required: false },
+  magic: { type: magicSchema, default: () => ({}) },
+  image: { type: String },
   tableIds: [{ type: mongoose.Schema.Types.ObjectId, ref: "TableTop" }],
   userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
+});
+
+// Pour gérer les anciens documents qui n’ont pas le champ magic
+characterSchema.pre("save", function (next) {
+  if (!this.magic || typeof this.magic !== "object") {
+    this.magic = {
+      ariaMagic: false,
+      deathMagic: false,
+      deathMagicCount: 0,
+      deathMagicMax: 10,
+    };
+  }
+  next();
 });
 
 const Character = mongoose.model('Character', characterSchema);

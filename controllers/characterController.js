@@ -50,7 +50,7 @@ const createCharacterAria = async (req, res) => {
       background,
       pros,
       cons,
-      origin,
+      origin
     } = req.body;
 
     const defaultBaseSkills = [
@@ -65,6 +65,16 @@ const createCharacterAria = async (req, res) => {
     const parsedInventory = req.body.inventory ? JSON.parse(req.body.inventory) : [];
     const parsedBaseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : defaultBaseSkills;
     const parsedWeapons = req.body.weapons ? JSON.parse(req.body.weapons) : [];
+    let parsedMagic = req.body.magic ? JSON.parse(req.body.magic) : { ariaMagic: false, deathMagic: false };
+
+if (parsedMagic.deathMagic) {
+  parsedMagic.deathMagicMax = parsedMagic.deathMagicMax || 10;
+  parsedMagic.deathMagicCount = Math.min(parsedMagic.deathMagicCount || 0, parsedMagic.deathMagicMax);
+} else {
+  parsedMagic.deathMagicCount = 0;
+  parsedMagic.deathMagicMax = 0;
+}
+
 
     let uploadedImageUrl = "";
 
@@ -80,6 +90,8 @@ const createCharacterAria = async (req, res) => {
       uploadedImageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
+
+    console.log("✅ Magic envoyé :", parsedMagic);
 
     const newCharacter = new Character({
       game,
@@ -105,6 +117,7 @@ const createCharacterAria = async (req, res) => {
       inventory: parsedInventory,
       weapons: parsedWeapons,
       userId: req.user.id,
+      magic: parsedMagic,
     });
 
     await newCharacter.save();
@@ -157,16 +170,20 @@ const updateCharacter = async (req, res) => {
   try {
     console.log("Données reçues :", req.body);
 
-    const { baseSkills } = req.body;
+    const character = await Character.findById(req.params.id);
+    if (!character) {
+      return res.status(404).json({ message: "Personnage non trouvé" });
+    }
 
-    const updatedBaseSkills = Array.isArray(baseSkills)
-      ? baseSkills.map((skill) => ({
+    // 🔁 Traitement des données
+    const updatedBaseSkills = Array.isArray(req.body.baseSkills)
+      ? req.body.baseSkills.map((skill) => ({
           ...skill,
           bonusMalus: skill.bonusMalus || 0,
         }))
-      : tryParse(baseSkills);
+      : tryParse(req.body.baseSkills);
 
-    let uploadedImageUrl = req.body.image;
+    let uploadedImageUrl = character.image;
 
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
@@ -180,7 +197,7 @@ const updateCharacter = async (req, res) => {
       fs.unlinkSync(req.file.path);
     }
 
-    const updatedData = {
+    const updatedFields = {
       ...req.body,
       baseSkills: updatedBaseSkills,
       image: uploadedImageUrl,
@@ -188,24 +205,30 @@ const updateCharacter = async (req, res) => {
       inventory: tryParse(req.body.inventory),
       weapons: tryParse(req.body.weapons),
       tableIds: tryParse(req.body.tableIds),
+      magic: tryParse(req.body.magic),
     };
 
-    const updatedCharacter = await Character.findByIdAndUpdate(
-      req.params.id,
-      updatedData,
-      { new: true, runValidators: true }
-    );
-
-    if (!updatedCharacter) {
-      return res.status(404).json({ message: "Personnage non trouvé" });
+    // 🛠️ Met à jour proprement les champs du personnage
+    for (const key in updatedFields) {
+      character.set(key, updatedFields[key]);
     }
 
-    res.status(200).json(updatedCharacter);
+    // ✅ Correction préventive du deathMagicCount
+    if (
+      character.magic &&
+      character.magic.deathMagicCount > character.magic.deathMagicMax
+    ) {
+      character.magic.deathMagicCount = character.magic.deathMagicMax;
+    }
+
+    await character.save();
+    res.status(200).json(character);
   } catch (error) {
     console.error("Erreur mise à jour personnage:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // Supprimer un personnage
 const deleteCharacter = async (req, res) => {
