@@ -55,7 +55,7 @@ router.put("/:id", upload.single("image"), updateCharacter);
 
 router.get("/characters", protect, getCharactersByUser);
 
-router.put("characters/:id/drawAriaCard", drawAriaCard);
+router.put("/:id/drawAriaCard", drawAriaCard);
 
 
 // Route pour supprimer un personnage

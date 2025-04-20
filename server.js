@@ -103,6 +103,19 @@ io.on("connection", (socket) => {
     io.to(`table-${message.tableId}`).emit("newMessage", message);
   });
 
+  socket.on("chatMessage", (message) => {
+    const systemMessage = {
+      senderName: "Système",
+      characterName: "Système",
+      message: message.content, // <- remets dans `message` pour compatibilité
+      tableId: message.tableId,
+      isSystem: true,
+    };
+    io.to(`table-${message.tableId}`).emit("newMessage", systemMessage);
+  });
+  
+  
+
   socket.on("sendMedia", ({ tableId, mediaUrl }) => {
     io.to(`table-${tableId}`).emit("newMedia", mediaUrl);
   });
@@ -127,7 +140,6 @@ io.on("connection", (socket) => {
   });
 
   socket.on("sendNpcToDisplay", (npc) => {
-    console.log("🧙 PNJ reçu côté serveur :", npc);
     io.to(`table-${npc.tableId}`).emit("sendNpcToDisplay", npc); 
   });
   
