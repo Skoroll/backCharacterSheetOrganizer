@@ -522,6 +522,31 @@ const updateDeathMagic = async (req, res) => {
   }
 };
 
+const updateGold = async (req, res) => {
+  const { id } = req.params;
+  const { gold } = req.body;
+
+  try {
+    if (gold === undefined || typeof gold !== "number" || gold < 0) {
+      return res.status(400).json({ message: "Or invalide ou manquant" });
+    }
+
+    const character = await Character.findById(id);
+    if (!character) {
+      return res.status(404).json({ message: "Personnage non trouvé" });
+    }
+
+    character.gold = gold;
+    await character.save();
+
+    res.status(200).json({ message: "Or mis à jour", gold: character.gold });
+  } catch (err) {
+    console.error("❌ Erreur updateGold :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
+
 module.exports = {
   createCharacterAria,
   getCharacterById,
@@ -534,4 +559,5 @@ module.exports = {
   drawAriaCard,
   reshuffleAriaDeck,
   updateDeathMagic,
+  updateGold,
 };

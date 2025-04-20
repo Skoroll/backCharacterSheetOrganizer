@@ -13,6 +13,7 @@ const {
   updateHealth,
   drawAriaCard,
   updateDeathMagic,
+  updateGold,
 } = require('../controllers/characterController');
 
 
@@ -62,5 +63,8 @@ router.patch("/:id/update-death-magic", updateDeathMagic);
 
 // Route pour supprimer un personnage
 router.delete("/:id", deleteCharacter);
+
+router.patch("/:id/update-gold", updateGold);
+
 
 module.exports = router;
