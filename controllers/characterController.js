@@ -29,29 +29,60 @@ const createCharacterAria = async (req, res) => {
       background,
       pros,
       cons,
-      origin
+      origin,
     } = req.body;
 
     const defaultBaseSkills = [
-      { name: "Artisanat", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
-      { name: "Combat rapproché", link1: "strength", link2: "dexterity", bonusMalus: 0 },
-      { name: "Combat à distance", link1: "dexterity", link2: "intelligence", bonusMalus: 0 },
-      { name: "Discrétion", link1: "dexterity", link2: "charisma", bonusMalus: 0 },
-      { name: "Réflexe", link1: "dexterity", link2: "intelligence", bonusMalus: 0 }
+      {
+        name: "Artisanat",
+        link1: "dexterity",
+        link2: "intelligence",
+        bonusMalus: 0,
+      },
+      {
+        name: "Combat rapproché",
+        link1: "strength",
+        link2: "dexterity",
+        bonusMalus: 0,
+      },
+      {
+        name: "Combat à distance",
+        link1: "dexterity",
+        link2: "intelligence",
+        bonusMalus: 0,
+      },
+      {
+        name: "Discrétion",
+        link1: "dexterity",
+        link2: "charisma",
+        bonusMalus: 0,
+      },
+      {
+        name: "Réflexe",
+        link1: "dexterity",
+        link2: "intelligence",
+        bonusMalus: 0,
+      },
     ];
 
     const parsedSkills = req.body.skills ? JSON.parse(req.body.skills) : [];
-    const parsedInventory = req.body.inventory ? JSON.parse(req.body.inventory) : [];
-    const parsedBaseSkills = req.body.baseSkills ? JSON.parse(req.body.baseSkills) : defaultBaseSkills;
+    const parsedInventory = req.body.inventory
+      ? JSON.parse(req.body.inventory)
+      : [];
+    const parsedBaseSkills = req.body.baseSkills
+      ? JSON.parse(req.body.baseSkills)
+      : defaultBaseSkills;
     const parsedWeapons = req.body.weapons ? JSON.parse(req.body.weapons) : [];
-    let parsedMagic = req.body.magic ? JSON.parse(req.body.magic) : { ariaMagic: false, deathMagic: false };
+    let parsedMagic = req.body.magic
+      ? JSON.parse(req.body.magic)
+      : { ariaMagic: false, deathMagic: false };
 
     //Initialisation complète de la magie d'Aria si activée
     if (parsedMagic.ariaMagic) {
       parsedMagic.ariaMagicCards = parsedMagic.ariaMagicCards?.length
         ? parsedMagic.ariaMagicCards
         : shuffleDeck();
-    
+
       parsedMagic.ariaMagicUsedCards = parsedMagic.ariaMagicUsedCards?.length
         ? parsedMagic.ariaMagicUsedCards
         : [];
@@ -59,20 +90,21 @@ const createCharacterAria = async (req, res) => {
       parsedMagic.ariaMagicCards = [];
       parsedMagic.ariaMagicUsedCards = [];
     }
-    
+
     console.log("✅ Magic envoyé :", parsedMagic);
-console.log("🃏 Cartes d'Aria :", parsedMagic.ariaMagicCards?.length);
+    console.log("🃏 Cartes d'Aria :", parsedMagic.ariaMagicCards?.length);
 
-
-//Initialise la magie de mort
-if (parsedMagic.deathMagic) {
-  parsedMagic.deathMagicMax = parsedMagic.deathMagicMax || 10;
-  parsedMagic.deathMagicCount = Math.min(parsedMagic.deathMagicCount || 0, parsedMagic.deathMagicMax);
-} else {
-  parsedMagic.deathMagicCount = 0;
-  parsedMagic.deathMagicMax = 0;
-}
-
+    //Initialise la magie de mort
+    if (parsedMagic.deathMagic) {
+      parsedMagic.deathMagicMax = parsedMagic.deathMagicMax || 10;
+      parsedMagic.deathMagicCount = Math.min(
+        parsedMagic.deathMagicCount || 0,
+        parsedMagic.deathMagicMax
+      );
+    } else {
+      parsedMagic.deathMagicCount = 0;
+      parsedMagic.deathMagicMax = 0;
+    }
 
     let uploadedImageUrl = "";
 
@@ -119,7 +151,12 @@ if (parsedMagic.deathMagic) {
     });
 
     await newCharacter.save();
-    res.status(201).json({ message: "Personnage créé avec succès", character: newCharacter });
+    res
+      .status(201)
+      .json({
+        message: "Personnage créé avec succès",
+        character: newCharacter,
+      });
   } catch (error) {
     console.error("Erreur lors de la création du personnage Aria :", error);
     res.status(500).json({ message: "Erreur interne du serveur" });
@@ -127,7 +164,7 @@ if (parsedMagic.deathMagic) {
 };
 
 // Récupérer un personnage par son ID
- const getCharacterById = async (req, res) => {
+const getCharacterById = async (req, res) => {
   try {
     const character = await Character.findById(req.params.id);
     if (!character) {
@@ -142,16 +179,13 @@ if (parsedMagic.deathMagic) {
 // Récupérer tous les personnages
 const getAllCharacters = async (req, res) => {
   try {
-    const results = await Promise.all(
-      allModels.map((Model) => Model.find({}))
-    );
+    const results = await Promise.all(allModels.map((Model) => Model.find({})));
     const allCharacters = results.flat();
     res.json(allCharacters);
   } catch (error) {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
-
 
 // Mettre à jour un personnage
 function tryParse(value) {
@@ -194,14 +228,15 @@ const updateCharacter = async (req, res) => {
       uploadedImageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
-if (
-  character.magic &&
-  character.magic.ariaMagic &&
-  (!character.magic.ariaMagicCards || character.magic.ariaMagicCards.length === 0)
-) {
-  character.magic.ariaMagicCards = shuffleDeck();
-  character.magic.ariaMagicUsedCards = [];
-}
+    if (
+      character.magic &&
+      character.magic.ariaMagic &&
+      (!character.magic.ariaMagicCards ||
+        character.magic.ariaMagicCards.length === 0)
+    ) {
+      character.magic.ariaMagicCards = shuffleDeck();
+      character.magic.ariaMagicUsedCards = [];
+    }
 
     const updatedFields = {
       ...req.body,
@@ -228,7 +263,7 @@ if (
       updatedFields.magic.ariaMagicCards = shuffleDeck();
       updatedFields.magic.ariaMagicUsedCards = [];
     }
-  
+
     // Correction préventive du deathMagicCount
     if (
       character.magic &&
@@ -245,7 +280,6 @@ if (
   }
 };
 
-
 // Supprimer un personnage
 const deleteCharacter = async (req, res) => {
   try {
@@ -257,10 +291,13 @@ const deleteCharacter = async (req, res) => {
     // Supprimer l'image de Cloudinary si elle existe
     if (character.image) {
       try {
-        const segments = character.image.split('/');
+        const segments = character.image.split("/");
         const filename = segments[segments.length - 1];
-        const publicId = `characterPictures/${filename.substring(0, filename.lastIndexOf('.'))}`;
-        
+        const publicId = `characterPictures/${filename.substring(
+          0,
+          filename.lastIndexOf(".")
+        )}`;
+
         const result = await cloudinary.uploader.destroy(publicId);
       } catch (err) {
         console.warn("Impossible de supprimer l'image Cloudinary :", err);
@@ -294,9 +331,9 @@ const getUserCharacters = async (req, res) => {
 const getCharactersByUser = async (req, res) => {
   try {
     const characters = await Character.find({ userId: req.user.id })
-      .populate('weapons')  // Résoudre les références des armes
-      .populate('skills')   // Résoudre les références des compétences
-      .populate('inventory') // Résoudre les références des objets
+      .populate("weapons") // Résoudre les références des armes
+      .populate("skills") // Résoudre les références des compétences
+      .populate("inventory") // Résoudre les références des objets
       .exec();
 
     if (!characters) {
@@ -315,9 +352,11 @@ const updateHealth = async (req, res) => {
     console.log("Requête reçue pour updateHealth :", req.body);
 
     const { pointsOfLife, tableId } = req.body; // Ajout de `tableId`
-    
+
     if (pointsOfLife === undefined) {
-      return res.status(400).json({ message: "Le champ pointsOfLife est requis" });
+      return res
+        .status(400)
+        .json({ message: "Le champ pointsOfLife est requis" });
     }
 
     if (!tableId) {
@@ -332,10 +371,14 @@ const updateHealth = async (req, res) => {
 
     // Vérifier si le personnage appartient bien à cette table
     if (!character.tableIds.includes(tableId)) {
-      console.warn(`Le personnage ${character._id} ne fait pas partie de cette table. Ajout en cours...`);
+      console.warn(
+        `Le personnage ${character._id} ne fait pas partie de cette table. Ajout en cours...`
+      );
 
       // Trouver la table contenant ce personnage
-      const table = await TableTop.findOne({ "players.selectedCharacter": character._id });
+      const table = await TableTop.findOne({
+        "players.selectedCharacter": character._id,
+      });
 
       if (table) {
         console.log(`Table trouvée : ${table._id}`);
@@ -346,8 +389,12 @@ const updateHealth = async (req, res) => {
           await character.save();
         }
       } else {
-        console.error(`Impossible de trouver une table associée au personnage ${character._id}`);
-        return res.status(400).json({ message: "Ce personnage n'est pas associé à une table" });
+        console.error(
+          `Impossible de trouver une table associée au personnage ${character._id}`
+        );
+        return res
+          .status(400)
+          .json({ message: "Ce personnage n'est pas associé à une table" });
       }
     }
 
@@ -361,7 +408,9 @@ const updateHealth = async (req, res) => {
     const io = req.app.get("io");
     if (!io) {
       console.error("ERREUR : io non trouvé dans req.app !");
-      return res.status(500).json({ message: "Erreur serveur : io non défini" });
+      return res
+        .status(500)
+        .json({ message: "Erreur serveur : io non défini" });
     }
 
     // Émettre l'événement à la bonne salle "table-{tableId}"
@@ -380,18 +429,42 @@ const updateHealth = async (req, res) => {
 
 const drawAriaCard = async (req, res) => {
   const character = await Character.findById(req.params.id);
+
+  if (
+    !character.magic.ariaMagicCards ||
+    character.magic.ariaMagicCards.length === 0
+  ) {
+    return res
+      .status(400)
+      .json({ message: "Le deck est vide, impossible de piocher." });
+  }
+  
+
   if (!character || !character.magic.ariaMagic) {
-    return res.status(400).json({ message: "Ce personnage ne peut pas utiliser la magie d'Aria." });
+    return res
+      .status(400)
+      .json({ message: "Ce personnage ne peut pas utiliser la magie d'Aria." });
   }
 
   // Initialiser le deck s’il est vide
-  if (!character.magic.ariaMagicCards || character.magic.ariaMagicCards.length === 0) {
+  if (
+    !character.magic.ariaMagicCards ||
+    character.magic.ariaMagicCards.length === 0
+  ) {
     character.magic.ariaMagicCards = shuffleDeck();
     character.magic.ariaMagicUsedCards = [];
   }
 
   const card = character.magic.ariaMagicCards.pop();
+
+  if (!card) {
+    return res.status(400).json({
+      message: "Le deck est vide, impossible de piocher une nouvelle carte.",
+    });
+  }
+  
   character.magic.ariaMagicUsedCards.push(card);
+  
 
   await character.save();
   res.status(200).json({ card });
@@ -400,7 +473,9 @@ const drawAriaCard = async (req, res) => {
 const reshuffleAriaDeck = async (req, res) => {
   const character = await Character.findById(req.params.id);
   if (!character || !character.magic.ariaMagic) {
-    return res.status(400).json({ message: "Ce personnage ne peut pas utiliser la magie d'Aria." });
+    return res
+      .status(400)
+      .json({ message: "Ce personnage ne peut pas utiliser la magie d'Aria." });
   }
 
   character.magic.ariaMagicCards = shuffleDeck();
@@ -409,7 +484,6 @@ const reshuffleAriaDeck = async (req, res) => {
   await character.save();
   res.status(200).json({ message: "Deck mélangé" });
 };
-
 
 module.exports = {
   createCharacterAria,
@@ -421,4 +495,5 @@ module.exports = {
   getCharactersByUser,
   updateHealth,
   drawAriaCard,
-}
+  reshuffleAriaDeck,
+};

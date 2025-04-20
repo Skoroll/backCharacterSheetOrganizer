@@ -1,5 +1,5 @@
 const mongoose = require("mongoose");
-const { shuffleDeck } = require("../utils/shuffleDeckAria");
+const shuffleDeck = require("../utils/shuffleDeckAria");
 
 // Schema des magies
 const magicSchema = new mongoose.Schema({
