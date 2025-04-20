@@ -485,6 +485,43 @@ const reshuffleAriaDeck = async (req, res) => {
   res.status(200).json({ message: "Deck mélangé" });
 };
 
+const updateDeathMagic = async (req, res) => {
+  const { id } = req.params;
+  const { deathMagicCount, tableId } = req.body;
+
+  try {
+    const character = await Character.findById(id);
+    if (!character) return res.status(404).json({ message: "Personnage non trouvé" });
+
+    if (!character.magic) {
+      character.magic = {
+        ariaMagic: false,
+        deathMagic: true,
+        deathMagicCount: 0,
+        deathMagicMax: 0,
+        ariaMagicCards: [],
+        ariaMagicUsedCards: [],
+      };
+    }
+
+    character.magic.deathMagicCount = deathMagicCount;
+    await character.save();
+
+    // Envoie une mise à jour à la table si besoin
+    if (tableId) {
+      req.io?.to(`table-${tableId}`).emit("characterUpdated", {
+        characterId,
+        update: { magic: character.magic },
+      });
+    }
+
+    res.status(200).json({ message: "Points de magie de mort mis à jour", magic: character.magic });
+  } catch (err) {
+    console.error("❌ Erreur dans updateDeathMagic :", err);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 module.exports = {
   createCharacterAria,
   getCharacterById,
@@ -496,4 +533,5 @@ module.exports = {
   updateHealth,
   drawAriaCard,
   reshuffleAriaDeck,
+  updateDeathMagic,
 };

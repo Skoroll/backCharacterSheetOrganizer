@@ -11,7 +11,8 @@ const {
   getUserCharacters,
   getCharactersByUser,
   updateHealth,
-  drawAriaCard
+  drawAriaCard,
+  updateDeathMagic,
 } = require('../controllers/characterController');
 
 
@@ -57,6 +58,7 @@ router.get("/characters", protect, getCharactersByUser);
 
 router.put("/:id/drawAriaCard", drawAriaCard);
 
+router.patch("/:id/update-death-magic", updateDeathMagic);
 
 // Route pour supprimer un personnage
 router.delete("/:id", deleteCharacter);
