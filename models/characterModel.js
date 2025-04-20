@@ -4,23 +4,21 @@ const shuffleDeck = require("../utils/shuffleDeckAria");
 // Schema des magies
 const magicSchema = new mongoose.Schema({
   ariaMagic: { type: Boolean, default: false },
+  ariaMagicLevel: {
+    type: Number,
+    enum: [1, 2, 3],
+    default: 1,
+  },
   deathMagic: { type: Boolean, default: false },
   deathMagicMax: { type: Number, default: 10, min: 0 },
   deathMagicCount: {
     type: Number,
     default: 0,
     min: 0,
-    validate: {
-      validator: function (value) {
-        return value <= this.deathMagicMax;
-      },
-      message: "deathMagicCount ne peut pas dépasser deathMagicMax.",
-    },
   },
   ariaMagicCards: { type: [String], default: [] },
   ariaMagicUsedCards: { type: [String], default: [] },  
 });
-
 
 // Schema du personnages
 const characterSchema = new mongoose.Schema({

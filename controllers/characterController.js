@@ -79,6 +79,7 @@ const createCharacterAria = async (req, res) => {
 
     //Initialisation complète de la magie d'Aria si activée
     if (parsedMagic.ariaMagic) {
+      parsedMagic.ariaMagicLevel = parsedMagic.ariaMagicLevel || 1;
       parsedMagic.ariaMagicCards = parsedMagic.ariaMagicCards?.length
         ? parsedMagic.ariaMagicCards
         : shuffleDeck();
@@ -202,12 +203,9 @@ const updateCharacter = async (req, res) => {
   try {
     console.log("Données reçues :", req.body);
 
-    const character = await Character.findById(req.params.id);
-    if (!character) {
-      return res.status(404).json({ message: "Personnage non trouvé" });
-    }
+    const characterId = req.params.id;
 
-    // Traitement des données
+    // Parsing des champs
     const updatedBaseSkills = Array.isArray(req.body.baseSkills)
       ? req.body.baseSkills.map((skill) => ({
           ...skill,
@@ -215,7 +213,32 @@ const updateCharacter = async (req, res) => {
         }))
       : tryParse(req.body.baseSkills);
 
-    let uploadedImageUrl = character.image;
+    const magic = tryParse(req.body.magic);
+    const skills = tryParse(req.body.skills);
+    const inventory = tryParse(req.body.inventory);
+    const weapons = tryParse(req.body.weapons);
+    const tableIds = tryParse(req.body.tableIds);
+
+    // Correction de la magie
+    if (magic?.ariaMagic) {
+      magic.ariaMagicLevel = magic.ariaMagicLevel ?? 1;
+      magic.ariaMagicCards = magic.ariaMagicCards ?? shuffleDeck();
+      magic.ariaMagicUsedCards = magic.ariaMagicUsedCards ?? [];
+    } else {
+      delete magic.ariaMagicLevel;
+      magic.ariaMagicCards = [];
+      magic.ariaMagicUsedCards = [];
+    }
+
+    if (magic?.deathMagic) {
+      magic.deathMagicMax = magic.deathMagicMax ?? 10;
+      magic.deathMagicCount = Math.min(magic.deathMagicCount ?? 0, magic.deathMagicMax);
+    } else {
+      magic.deathMagicCount = 0;
+      magic.deathMagicMax = 0;
+    }
+
+    let uploadedImageUrl = req.body.image;
 
     if (req.file) {
       const result = await cloudinary.uploader.upload(req.file.path, {
@@ -228,57 +251,36 @@ const updateCharacter = async (req, res) => {
       uploadedImageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
-    if (
-      character.magic &&
-      character.magic.ariaMagic &&
-      (!character.magic.ariaMagicCards ||
-        character.magic.ariaMagicCards.length === 0)
-    ) {
-      character.magic.ariaMagicCards = shuffleDeck();
-      character.magic.ariaMagicUsedCards = [];
-    }
 
     const updatedFields = {
       ...req.body,
-      baseSkills: updatedBaseSkills,
       image: uploadedImageUrl,
-      skills: tryParse(req.body.skills),
-      inventory: tryParse(req.body.inventory),
-      weapons: tryParse(req.body.weapons),
-      tableIds: tryParse(req.body.tableIds),
-      magic: tryParse(req.body.magic),
+      baseSkills: updatedBaseSkills,
+      skills,
+      inventory,
+      weapons,
+      tableIds,
+      magic,
     };
 
-    // 🛠️ Met à jour proprement les champs du personnage
-    for (const key in updatedFields) {
-      character.set(key, updatedFields[key]);
+    // 🔁 Remplace le document avec les nouvelles données
+    const updatedCharacter = await Character.findByIdAndUpdate(
+      characterId,
+      updatedFields,
+      { new: true, runValidators: true }
+    );
+
+    if (!updatedCharacter) {
+      return res.status(404).json({ message: "Personnage non trouvé" });
     }
 
-    // Initialiser le deck d'Aria si besoin
-    if (
-      updatedFields.magic?.ariaMagic &&
-      (!Array.isArray(updatedFields.magic.ariaMagicCards) ||
-        updatedFields.magic.ariaMagicCards.length === 0)
-    ) {
-      updatedFields.magic.ariaMagicCards = shuffleDeck();
-      updatedFields.magic.ariaMagicUsedCards = [];
-    }
-
-    // Correction préventive du deathMagicCount
-    if (
-      character.magic &&
-      character.magic.deathMagicCount > character.magic.deathMagicMax
-    ) {
-      character.magic.deathMagicCount = character.magic.deathMagicMax;
-    }
-
-    await character.save();
-    res.status(200).json(character);
+    res.status(200).json(updatedCharacter);
   } catch (error) {
     console.error("Erreur mise à jour personnage:", error);
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 // Supprimer un personnage
 const deleteCharacter = async (req, res) => {
