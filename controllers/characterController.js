@@ -116,8 +116,6 @@ const getCharactersByUser = async (req, res) => {
 
 const updateHealth = async (req, res) => {
   try {
-    console.log("Requête reçue pour updateHealth :", req.body);
-
     const { pointsOfLife, tableId } = req.body; // Ajout de `tableId`
 
     if (pointsOfLife === undefined) {
@@ -148,7 +146,6 @@ const updateHealth = async (req, res) => {
       });
 
       if (table) {
-        console.log(`Table trouvée : ${table._id}`);
 
         // Ajouter cette table à la liste des tables du personnage si elle n'existe pas
         if (!character.tableIds.includes(table._id)) {
@@ -165,7 +162,6 @@ const updateHealth = async (req, res) => {
       }
     }
 
-    console.log(`Table ID final utilisé : ${tableId}`);
 
     // Mettre à jour les PV
     character.pointsOfLife = pointsOfLife;
@@ -181,7 +177,6 @@ const updateHealth = async (req, res) => {
     }
 
     // Émettre l'événement à la bonne salle "table-{tableId}"
-    console.log(`📡 Emission de "updateHealth" à table-${tableId}`);
     io.to(`table-${tableId}`).emit("updateHealth", {
       characterId: character._id,
       pointsOfLife: character.pointsOfLife,
@@ -305,9 +300,6 @@ const createCharacterAria = async (req, res) => {
       parsedMagic.ariaMagicUsedCards = [];
     }
 
-    console.log("✅ Magic envoyé :", parsedMagic);
-    console.log("🃏 Cartes d'Aria :", parsedMagic.ariaMagicCards?.length);
-
     //Initialise la magie de mort
     if (parsedMagic.deathMagic) {
       parsedMagic.deathMagicMax = parsedMagic.deathMagicMax || 10;
@@ -334,8 +326,6 @@ const createCharacterAria = async (req, res) => {
       uploadedImageUrl = result.secure_url;
       fs.unlinkSync(req.file.path);
     }
-
-    console.log("✅ Magic envoyé :", parsedMagic);
 
     const newCharacter = new Character({
       game,
@@ -376,10 +366,8 @@ const createCharacterAria = async (req, res) => {
 };
 
 // Met à jour un personnage
-const updateCharacter = async (req, res) => {
+const updateCharacterAria = async (req, res) => {
   try {
-    console.log("Données reçues :", req.body);
-
     const characterId = req.params.id;
 
     // Parsing des champs
@@ -400,7 +388,6 @@ const updateCharacter = async (req, res) => {
 
     if (magic?.ariaMagic) {
       magic.ariaMagicLevel = magic.ariaMagicLevel ?? 1;
-      console.log("MAGIE REÇUE :", magic);
 
       // ✅ NE PAS toucher ariaMagicCards si déjà présent (même vide)
       if (!("ariaMagicCards" in magic)) {
@@ -573,7 +560,7 @@ module.exports = {
   createCharacterAria,
   getCharacterById,
   getAllCharacters,
-  updateCharacter,
+  updateCharacterAria,
   deleteCharacter,
   getUserCharacters,
   getCharactersByUser,

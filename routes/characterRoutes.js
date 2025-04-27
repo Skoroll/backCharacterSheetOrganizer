@@ -6,7 +6,7 @@ const {
   createCharacterAria,
   getAllCharacters,
   getCharacterById,
-  updateCharacter,
+  updateCharacterAria,
   deleteCharacter,
   getUserCharacters,
   getCharactersByUser,
@@ -44,26 +44,39 @@ router.get("/", (req, res, next) => {
   next();
 }, getAllCharacters);
 
+
+////////////////////////////
+////////////ARIA////////////
+////////////////////////////
+
 // Route pour créer un personnage avec upload de fichier
 router.post("/aria", protect, upload.single("image"), createCharacterAria);
 
-router.patch("/:id/update-health", updateHealth);
-
-// Route pour récupérer un personnage par son ID
-router.get("/:id", getCharacterById);
-
 // Route pour mettre à jour un personnage
-router.put("/:id", upload.single("image"), updateCharacter);
-
-router.get("/characters", protect, getCharactersByUser);
+router.put("/aria/:id", upload.single("image"), updateCharacterAria);
 
 router.put("/:id/drawAriaCard", drawAriaCard);
 
 router.patch("/:id/update-death-magic", updateDeathMagic);
 
+
+
+////////////////////////////
+///////////Général//////////
+////////////////////////////
+
+// Route pour récupérer un personnage par son ID
+router.get("/:id", getCharacterById);
+
+router.get("/characters", protect, getCharactersByUser);
+
+//Modifie la vie à la volée
+router.patch("/:id/update-health", updateHealth);
+
 // Route pour supprimer un personnage
 router.delete("/:id", deleteCharacter);
 
+//Mise à jour de l'or
 router.patch("/:id/update-gold", updateGold);
 
 

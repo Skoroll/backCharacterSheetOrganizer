@@ -114,7 +114,6 @@ exports.deleteNpc = async (req, res) => {
 
       await cloudinary.uploader.destroy(publicId)
         .then(() => {
-          console.log("🗑️ Image supprimée de Cloudinary :", publicId);
         })
         .catch((err) => {
           console.error("❌ Erreur suppression image Cloudinary :", err);

@@ -85,41 +85,29 @@ exports.register = async (req, res) => {
 exports.login = async (req, res) => {
   const { name, password } = req.body;
 
-  console.log("🔹 Tentative de connexion avec :", name);
-
   if (!name || !password) {
-    console.log("❌ Champs manquants !");
     return res.status(400).json({ message: "Les champs 'name' et 'password' sont obligatoires." });
   }
 
   try {
     const user = await User.findOne({ name });
     if (!user) {
-      console.log("❌ Utilisateur non trouvé !");
       return res.status(401).json({ message: "Nom ou mot de passe incorrect." });
     }
 
     const match = await bcrypt.compare(password, user.password);
     if (!match) {
-      console.log("❌ Mot de passe incorrect !");
+
       return res.status(401).json({ message: "Nom ou mot de passe incorrect." });
     }
 
-    console.log("✅ Utilisateur authentifié :", user);
+    console.log("Utilisateur authentifié :", user);
 
     const accessToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1d' });
     const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    console.log("🔑 Token généré :", accessToken);
-
-    user.refreshToken = refreshToken; // ✅ Stocke le refresh token en base
+    user.refreshToken = refreshToken; 
     await user.save();
-
-    console.log("📤 Réponse envoyée :", { 
-      accessToken, 
-      refreshToken, 
-      user: { id: user._id, name: user.name, email: user.email } 
-    });
 
     res.status(200).json({
       message: 'Connexion réussie',
@@ -129,7 +117,7 @@ exports.login = async (req, res) => {
     });
 
   } catch (err) {
-    console.error("❌ Erreur lors de la connexion :", err);
+    console.error("Erreur lors de la connexion :", err);
     res.status(500).json({ message: "Erreur interne du serveur." });
   }
 };
@@ -286,8 +274,6 @@ exports.forgotPassword = async (req, res) => {
 
     // Générer un token de réinitialisation (valable 15 minutes)
     const token = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "15m" });
-    console.log("🛠️ Token généré :", token);
-    console.log("🔑 Clé JWT utilisée :", process.env.JWT_SECRET);
 
     // Configuration de Nodemailer
     const transporter = nodemailer.createTransport({
@@ -348,11 +334,8 @@ exports.resetPasswordRequest = async (req, res) => {
   const { token } = req.params;
 
   try {
-    console.log("🔍 Token reçu :", token);
-    console.log("🔑 JWT_SECRET utilisé :", process.env.JWT_SECRET); // Debug
 
     const decoded = jwt.verify(token, process.env.JWT_SECRET); 
-    console.log("✅ Token décodé :", decoded);
 
     const user = await User.findById(decoded.id);
     if (!user) {

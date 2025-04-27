@@ -32,10 +32,7 @@ exports.uploadFile = async (req, res) => {
       return res.status(400).json({ message: "ID de table requis." });
     }
 
-    const savedFiles = [];
-    console.log("🧾 isBG brut reçu :", isBG);
-    console.log("✅ isBG transformé :", isBG === "false" ? false : true);
-    
+    const savedFiles = [];  
     // ✅ Texte
     if (text) {
       const newTextFile = new GmFile({
@@ -108,7 +105,6 @@ exports.deleteFile = async (req, res) => {
         const publicId = "gmAssets/" + filenameWithExt.split(".")[0]; // ex: gmAssets/monfichier-12345
 
         const result = await cloudinary.uploader.destroy(publicId);
-        console.log("🗑️ Cloudinary delete result:", result);
       } catch (cloudErr) {
         console.warn("⚠️ Erreur suppression Cloudinary :", cloudErr.message);
       }

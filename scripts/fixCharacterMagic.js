@@ -16,11 +16,11 @@ async function migrate() {
     };
     delete char.ariaMagic; // supprime l'ancien champ
     await char.save();
-    console.log(`✔️ ${char.name} mis à jour`);
+
   }
 
   await mongoose.disconnect();
-  console.log("✅ Migration terminée.");
+  console.log("Migration terminée.");
 }
 
 migrate().catch((err) => {

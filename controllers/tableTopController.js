@@ -199,7 +199,6 @@ exports.deleteTable = async (req, res) => {
       const publicId = `tableBanner/${segments[segments.length - 1].split(".")[0]}`;
       try {
         await cloudinary.uploader.destroy(publicId);
-        console.log("🗑️ Bannière supprimée de Cloudinary :", publicId);
       } catch (err) {
         console.warn("⚠️ Échec suppression bannière Cloudinary :", err.message);
       }
@@ -219,7 +218,6 @@ exports.deleteTable = async (req, res) => {
         const publicId = `gmAssets/${segments[segments.length - 1].split(".")[0]}`;
         try {
           await cloudinary.uploader.destroy(publicId);
-          console.log("🗑️ Fichier MJ supprimé de Cloudinary :", publicId);
         } catch (err) {
           console.warn("⚠️ Échec suppression image MJ :", err.message);
         }
@@ -235,7 +233,6 @@ exports.deleteTable = async (req, res) => {
         const publicId = `npcs/${segments[segments.length - 1].split(".")[0]}`;
         try {
           await cloudinary.uploader.destroy(publicId);
-          console.log("🗑️ Image PNJ supprimée de Cloudinary :", publicId);
         } catch (err) {
           console.warn("⚠️ Échec suppression image PNJ :", err.message);
         }
@@ -257,9 +254,6 @@ exports.deleteTable = async (req, res) => {
 // 📌 Mettre à jour les notes du MJ
 exports.updateNotes = async (req, res) => {
   const { id } = req.params;
-  console.log("🛠 updateNotes appelée avec ID :", id);
-  console.log("🧾 Contenu de req.body :", req.body); // 👈 AJOUT ICI
-
   const { characters, quest, other, items } = req.body;
 
   try {
@@ -279,12 +273,9 @@ exports.updateNotes = async (req, res) => {
 
 exports.getGameMasterNotes = async (req, res) => {
   const { id } = req.params;
-  console.log("🔹 Requête reçue pour récupérer les notes du MJ :", id);
-
   try {
     const table = await TableTop.findById(id);
     if (!table) {
-      console.log("❌ Table introuvable :", id);
       return res.status(404).json({ message: "Table introuvable" });
     }
 
@@ -299,7 +290,6 @@ exports.getGameMasterNotes = async (req, res) => {
 exports.updatePlayerNotes = async (req, res) => {
   const { id } = req.params; // ID de la table
   const { playerId, characters, quest, other, items } = req.body;
-  console.log("🧾 Reçu :", req.body);
 
   try {
     const table = await TableTop.findById(id);
@@ -358,37 +348,25 @@ exports.getPlayerNotes = async (req, res) => {
   const { id } = req.params; // ID de la table
   const { playerId } = req.query; // ID du joueur
 
-  console.log(
-    "🔹 Requête reçue pour récupérer les notes du joueur :",
-    playerId,
-    "dans la table :",
-    id
-  );
-
   try {
     // Vérifie si l'ID de la table est valide
     if (!mongoose.Types.ObjectId.isValid(id)) {
-      console.log("❌ ID de table invalide :", id);
       return res.status(400).json({ message: "ID de table invalide" });
     }
 
     // Vérifie si l'ID du joueur est valide
     if (!mongoose.Types.ObjectId.isValid(playerId)) {
-      console.log("❌ ID du joueur invalide :", playerId);
       return res.status(400).json({ message: "ID du joueur invalide" });
     }
 
     const table = await TableTop.findById(id);
     if (!table) {
-      console.log("❌ Table introuvable pour ID :", id);
       return res.status(404).json({ message: "Table introuvable" });
     }
 
-    console.log("✅ Table trouvée :", table.name);
-    console.log("📝 `playerNotes` actuel dans la table :", table.playerNotes);
 
     if (!table.playerNotes) {
-      console.log("❌ `playerNotes` n'existe pas !");
+
       return res
         .status(500)
         .json({ message: "Erreur interne : `playerNotes` non défini." });
@@ -400,13 +378,13 @@ exports.getPlayerNotes = async (req, res) => {
     );
 
     if (!playerNotes) {
-      console.log("❌ Aucune note trouvée pour ce joueur :", playerId);
+
       return res
         .status(404)
         .json({ message: "Aucune note trouvée pour ce joueur" });
     }
 
-    console.log("✅ Notes du joueur récupérées :", playerNotes);
+
     res.status(200).json(playerNotes);
   } catch (error) {
     console.error("❌ Erreur serveur :", error);
@@ -417,9 +395,6 @@ exports.getPlayerNotes = async (req, res) => {
 // 📌 Supprimer un joueur d'une table
 exports.removePlayerFromTable = async (req, res) => {
   const { tableId, userId } = req.params;
-  console.log(
-    `Tentative de suppression du joueur ${userId} de la table ${tableId}`
-  );
 
   try {
     // 🔹 Récupérer la table
@@ -437,7 +412,6 @@ exports.removePlayerFromTable = async (req, res) => {
     );
 
     if (playerIndex === -1) {
-      console.log(`❌ Joueur ${userId} introuvable dans la table !`);
       return res
         .status(404)
         .json({ message: "Joueur non trouvé dans cette table" });
@@ -457,9 +431,7 @@ exports.removePlayerFromTable = async (req, res) => {
     await user.save();
     const io = req.app.get("io");
     io.to(`table-${tableId}`).emit("refreshPlayers");
-    console.log(
-      `✅ Joueur ${removedPlayer.userId} supprimé et banni de la table ${tableId}`
-    );
+
     res
       .status(200)
       .json({
@@ -556,8 +528,6 @@ exports.updateTableStyle = async (req, res) => {
   const { id } = req.params;
   const { borderWidth, borderColor, bannerStyle, selectedFont, tableBG } =
     req.body;
-  console.log("🧾 req.body :", req.body);
-  console.log("📸 req.files :", req.files);
 
   const io = req.app.get("io"); // ✅ Récupérer l'instance de Socket.IO
 
@@ -576,7 +546,6 @@ exports.updateTableStyle = async (req, res) => {
       table.tableBG = tableBG || table.tableBG;
 
       const updatedTable = await table.save();
-      console.log("✅ Style (sans image) mis à jour :", updatedTable);
 
       io.to(`table-${id}`).emit("refreshTableStyle"); // ✅ Emit ici
       return res.status(200).json(updatedTable);
@@ -593,7 +562,6 @@ exports.updateTableStyle = async (req, res) => {
 
       try {
         await cloudinary.uploader.destroy(publicId);
-        console.log("🗑️ Ancienne image supprimée de Cloudinary :", publicId);
       } catch (err) {
         console.warn("⚠️ Échec suppression Cloudinary :", err.message);
         return res
@@ -626,9 +594,8 @@ exports.updateTableStyle = async (req, res) => {
         table.tableBG = tableBG || table.tableBG;
 
         const updatedTable = await table.save();
-        console.log("✅ Style de table mis à jour avec image :", updatedTable);
 
-        io.to(`table-${id}`).emit("refreshTableStyle"); // ✅ Emit ici aussi
+        io.to(`table-${id}`).emit("refreshTableStyle");
 
         return res.status(200).json(updatedTable);
       }
@@ -680,9 +647,6 @@ exports.unbanPlayer = async (req, res) => {
 // 📌 Un joueur quitte volontairement une table (sans être banni)
 exports.leaveTableAsPlayer = async (req, res) => {
   const { tableId, userId } = req.params;
-
-  console.log(`🔹 Le joueur ${userId} quitte la table ${tableId}`);
-
   try {
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table non trouvée" });
@@ -713,7 +677,6 @@ exports.leaveTableAsPlayer = async (req, res) => {
     const io = req.app.get("io");
     io.to(`table-${tableId}`).emit("refreshPlayers");
 
-    console.log(`✅ Joueur ${userId} a quitté la table ${tableId} (non banni)`);
     res.status(200).json({ message: "Vous avez quitté la table." });
   } catch (error) {
     console.error("❌ Erreur dans leaveTableAsPlayer :", error);
