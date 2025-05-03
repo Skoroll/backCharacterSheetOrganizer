@@ -364,27 +364,26 @@ exports.getPlayerNotes = async (req, res) => {
       return res.status(404).json({ message: "Table introuvable" });
     }
 
-
     if (!table.playerNotes) {
-
-      return res
-        .status(500)
-        .json({ message: "Erreur interne : `playerNotes` non défini." });
+      return res.status(500).json({ message: "Erreur interne : `playerNotes` non défini." });
     }
 
-    // Trouver les notes du joueur
+    // Chercher les notes du joueur
     const playerNotes = table.playerNotes.find(
       (note) => note.playerId.toString() === playerId
     );
 
     if (!playerNotes) {
-
-      return res
-        .status(404)
-        .json({ message: "Aucune note trouvée pour ce joueur" });
+      // ✅ Si aucune note → retourner une note vide (200 OK)
+      return res.status(200).json({
+        characters: "",
+        quest: "",
+        other: "",
+        items: ""
+      });
     }
 
-
+    // ✅ Si trouvé → envoyer les notes existantes
     res.status(200).json(playerNotes);
   } catch (error) {
     console.error("❌ Erreur serveur :", error);
