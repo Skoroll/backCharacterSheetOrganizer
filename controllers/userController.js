@@ -384,3 +384,34 @@ exports.removeTableFromUser = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+// Recevoir le webhook de Ko-fi
+exports.handleKofiWebhook = async (req, res) => {
+  const { email, type, tier_name } = req.body;
+
+  if (!email) {
+    return res.status(400).json({ message: "Email manquant dans le webhook Ko-fi" });
+  }
+
+  try {
+    const user = await User.findOne({ email });
+
+    if (!user) {
+      return res.status(404).json({ message: "Utilisateur non trouvé avec cet email" });
+    }
+
+    user.isPremium = true;
+    user.kofiTier = tier_name || "Ko-fi Supporter";
+
+    // Facultatif : durée d'un mois premium
+    const ONE_MONTH = 1000 * 60 * 60 * 24 * 30;
+    user.premiumUntil = new Date(Date.now() + ONE_MONTH);
+
+    await user.save();
+
+    res.status(200).json({ message: "Statut premium mis à jour avec succès" });
+  } catch (error) {
+    console.error("Erreur Webhook Ko-fi:", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};

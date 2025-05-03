@@ -24,4 +24,7 @@ router.post('/logout', authMiddleware.protect, userController.logout);
 //Retire les tables inexistantes d'un utilisateur
 router.patch("/removeTable/:tableId", authMiddleware.protect, userController.removeTableFromUser);
 
+// Route pour recevoir le webhook Ko-fi
+router.post('/webhook', userController.handleKofiWebhook);
+
 module.exports = router;
