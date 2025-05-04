@@ -9,7 +9,7 @@ const bcrypt = require("bcryptjs");
 const cloudinary = require("cloudinary").v2;
 const mongoose = require("mongoose");
 
-// 📌 Créer une nouvelle table
+// Créer une nouvelle table
 exports.tableCreate = async (req, res) => {
   const { name, password, game, gameMaster, gameMasterName } = req.body;
 
@@ -55,7 +55,7 @@ exports.tableCreate = async (req, res) => {
   }
 };
 
-// 📌 Récupérer toutes les tables avec les joueurs
+// Récupérer toutes les tables avec les joueurs
 exports.getTables = async (req, res) => {
   try {
     const tables = await TableTop.find(
@@ -72,7 +72,7 @@ exports.getTables = async (req, res) => {
   }
 };
 
-// 📌 Récupérer une table par ID
+// Récupérer une table par ID
 exports.getTableById = async (req, res) => {
   const tableId = req.params.id;
 
@@ -89,7 +89,7 @@ exports.getTableById = async (req, res) => {
   }
 };
 
-// 📌 Vérification du mot de passe
+// Vérification du mot de passe
 exports.verifyPassword = async (req, res) => {
   const { password } = req.body;
   const tableId = req.params.id;
@@ -109,7 +109,7 @@ exports.verifyPassword = async (req, res) => {
   }
 };
 
-// 📌 Ajouter un joueur à une table
+// Ajouter un joueur à une table
 exports.addPlayer = async (req, res) => {
   const { tableId } = req.params;
   const { userId, selectedCharacter } = req.body;
@@ -118,50 +118,32 @@ exports.addPlayer = async (req, res) => {
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table introuvable" });
 
-    // 🔒 Vérifier si le joueur est banni
     if (table.bannedPlayers.includes(userId)) {
-      return res
-        .status(403)
-        .json({ message: "Ce joueur est banni de la table" });
+      return res.status(403).json({ message: "Ce joueur est banni de la table" });
     }
 
-    // 🔍 Vérifier si le joueur est déjà dans la table
     const existingPlayerIndex = table.players.findIndex(
       (player) => player.userId.toString() === userId
     );
 
-    // ✅ Si le joueur est présent, vérifier l'état de son personnage
     if (existingPlayerIndex !== -1) {
       const existingPlayer = table.players[existingPlayerIndex];
-      const characterExists = await Character.findById(
-        existingPlayer.selectedCharacter
-      );
+      const characterExists = await Character.findById(existingPlayer.selectedCharacter);
 
       if (!characterExists) {
-        // 🧹 Supprimer l'ancien enregistrement si le personnage n'existe plus
         table.players.splice(existingPlayerIndex, 1);
       } else {
-        return res
-          .status(400)
-          .json({
-            message:
-              "Le joueur est déjà présent à la table avec un personnage valide.",
-          });
+        return res.status(400).json({ message: "Joueur déjà présent." });
       }
     }
 
-    // 🔐 Vérifie que le personnage existe toujours avant ajout
     const characterStillExists = await Character.findById(selectedCharacter);
     if (!characterStillExists) {
-      return res
-        .status(404)
-        .json({ message: "Le personnage sélectionné est introuvable." });
+      return res.status(404).json({ message: "Personnage introuvable." });
     }
 
-    // 🧠 Récupérer l'utilisateur pour le nom
     const user = await User.findById(userId);
-    if (!user)
-      return res.status(404).json({ message: "Utilisateur introuvable" });
+    if (!user) return res.status(404).json({ message: "Utilisateur introuvable" });
 
     table.players.push({
       userId,
@@ -171,11 +153,15 @@ exports.addPlayer = async (req, res) => {
     });
 
     await table.save();
+    await User.findByIdAndUpdate(userId, { $addToSet: { tablesJoined: tableId } });
 
-    // ➕ Ajouter la table dans `tablesJoined` s'il ne l'a pas déjà
-    await User.findByIdAndUpdate(userId, {
-      $addToSet: { tablesJoined: tableId },
-    });
+    const io = req.app.get("io");
+    io.to(`table-${tableId}`).emit("refreshPlayers");
+
+    // ✅ LOG
+    const logMsg = `[JOIN] ${user.userPseudo} (${userId}) a rejoint la table "${table.name}" (${tableId})`;
+    io.emit("log", logMsg);
+    console.log(logMsg);
 
     res.status(200).json({ message: "Joueur ajouté avec succès." });
   } catch (error) {
@@ -184,8 +170,7 @@ exports.addPlayer = async (req, res) => {
   }
 };
 
-// 📌 Supprimer une table
-// 📌 Supprimer une table et toutes ses ressources associées
+// Supprimer une table et toutes ses ressources associées
 exports.deleteTable = async (req, res) => {
   const tableId = req.params.id;
 
@@ -251,7 +236,7 @@ exports.deleteTable = async (req, res) => {
 };
 
 
-// 📌 Mettre à jour les notes du MJ
+// Mettre à jour les notes du MJ
 exports.updateNotes = async (req, res) => {
   const { id } = req.params;
   const { characters, quest, other, items } = req.body;
@@ -286,7 +271,7 @@ exports.getGameMasterNotes = async (req, res) => {
   }
 };
 
-// 📌 Mettre à jour les notes d'un joueur
+// Mettre à jour les notes d'un joueur
 exports.updatePlayerNotes = async (req, res) => {
   const { id } = req.params; // ID de la table
   const { playerId, characters, quest, other, items } = req.body;
@@ -322,7 +307,7 @@ exports.updatePlayerNotes = async (req, res) => {
   }
 };
 
-// 📌 Récupérer les joueurs d'une table
+// Récupérer les joueurs d'une table
 exports.getPlayersFromTable = async (req, res) => {
   const tableId = req.params.id;
 
@@ -343,7 +328,7 @@ exports.getPlayersFromTable = async (req, res) => {
   }
 };
 
-// 📌 Récupérer les notes d'un joueur spécifique
+// Récupérer les notes d'un joueur spécifique
 exports.getPlayerNotes = async (req, res) => {
   const { id } = req.params; // ID de la table
   const { playerId } = req.query; // ID du joueur
@@ -391,21 +376,21 @@ exports.getPlayerNotes = async (req, res) => {
   }
 };
 
-// 📌 Supprimer un joueur d'une table
+// Supprimer un joueur d'une table
 exports.removePlayerFromTable = async (req, res) => {
   const { tableId, userId } = req.params;
 
   try {
-    // 🔹 Récupérer la table
+    // Récupérer la table
     const table = await TableTop.findById(tableId);
     if (!table) return res.status(404).json({ message: "Table non trouvée" });
 
-    // 🔹 Récupérer l'utilisateur
+    // Récupérer l'utilisateur
     const user = await User.findById(userId);
     if (!user)
       return res.status(404).json({ message: "Utilisateur non trouvé" });
 
-    // 🔹 Vérification et suppression du joueur dans la table
+    // Vérification et suppression du joueur dans la table
     const playerIndex = table.players.findIndex(
       (player) => player.userId.toString() === userId
     );
@@ -416,21 +401,25 @@ exports.removePlayerFromTable = async (req, res) => {
         .json({ message: "Joueur non trouvé dans cette table" });
     }
 
-    // ✅ Supprimer le joueur et l'ajouter à la liste des bannis
+    // Supprimer le joueur et l'ajouter à la liste des bannis
     const removedPlayer = table.players.splice(playerIndex, 1)[0];
     table.bannedPlayers.push(removedPlayer.userId.toString());
 
-    // ✅ Supprimer la table de `tablesJoined` du joueur
+    // Supprimer la table de `tablesJoined` du joueur
     user.tablesJoined = user.tablesJoined.filter(
       (joinedTableId) => joinedTableId.toString() !== tableId
     );
 
-    // ✅ Sauvegarder les changements
+    // Sauvegarder les changements
     await table.save();
     await user.save();
     const io = req.app.get("io");
     io.to(`table-${tableId}`).emit("refreshPlayers");
 
+    // LOG
+    const logMsg = `[BAN] ${user.userPseudo} (${userId}) a été banni de la table "${table.name}" (${tableId})`;
+    io.emit("log", logMsg);
+    console.log(logMsg);
     res
       .status(200)
       .json({
@@ -443,7 +432,7 @@ exports.removePlayerFromTable = async (req, res) => {
   }
 };
 
-// 📌 Supprimer le personnage d'un joueur (mais pas le joueur)
+// Supprimer le personnage d'un joueur (mais pas le joueur)
 exports.removePlayerCharacter = async (req, res) => {
   const { tableId, userId } = req.params;
 
@@ -528,7 +517,7 @@ exports.updateTableStyle = async (req, res) => {
   const { borderWidth, borderColor, bannerStyle, selectedFont, tableBG } =
     req.body;
 
-  const io = req.app.get("io"); // ✅ Récupérer l'instance de Socket.IO
+  const io = req.app.get("io"); // Récupérer l'instance de Socket.IO
 
   try {
     const table = await TableTop.findById(id);
@@ -607,7 +596,7 @@ exports.updateTableStyle = async (req, res) => {
   }
 };
 
-// 📌 Obtenir les joueurs bannis d'une table
+// Obtenir les joueurs bannis d'une table
 exports.getBannedPlayers = async (req, res) => {
   const { tableId } = req.params;
 
@@ -622,7 +611,7 @@ exports.getBannedPlayers = async (req, res) => {
   }
 };
 
-// 📌 Débannir un joueur
+// Débannir un joueur
 exports.unbanPlayer = async (req, res) => {
   const { tableId, userId } = req.params;
 
@@ -643,7 +632,7 @@ exports.unbanPlayer = async (req, res) => {
 };
 
 
-// 📌 Un joueur quitte volontairement une table (sans être banni)
+// Un joueur quitte volontairement une table (sans être banni)
 exports.leaveTableAsPlayer = async (req, res) => {
   const { tableId, userId } = req.params;
   try {

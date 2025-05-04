@@ -52,7 +52,7 @@ app.use((req, res, next) => {
     res.setHeader("Access-Control-Allow-Origin", origin);
   }
   res.setHeader("Access-Control-Allow-Methods", "GET, POST, PUT, DELETE, PATCH");
-  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization");
+  res.setHeader("Access-Control-Allow-Headers", "Content-Type, Authorization, x-admin");
   res.setHeader("Access-Control-Allow-Credentials", "true");
   if (req.method === "OPTIONS") {
     return res.status(200).end();
@@ -88,15 +88,31 @@ app.use("/gmAssets", express.static("gmAssets"));
 
 app.set("io", io);
 
+
+
+// Routes
+app.use("/api/items", itemRoutes);
+app.use("/api/users", userRoutes);
+app.use("/api/characters", characterRoutes);
+app.use("/api/tabletop", tableTopRoutes);
+app.use("/api/chat", chatRoutes);
+app.use("/api", npcRoutes);
+app.use("/api/gmfiles", gmFilesRoutes);
+app.use("/api/todos", todoRoutes);
+app.use("/api/articles", articleRoutes);
+
 io.on("connection", (socket) => {
-  socket.onAny((event, ...args) => {
+  console.log("✅ Nouveau client connecté :", socket.id);
+
+  // Historique des logs
+  socket.on("requestLogsHistory", () => {
+    socket.emit("logsHistory", logs);
   });
 
   socket.on("tableStyleUpdated", ({ tableId }) => {
     io.to(`table-${tableId}`).emit("refreshTableStyle");
   });
 
-  
   socket.on("joinTable", (tableId) => {
     socket.join(`table-${tableId}`);
   });
@@ -109,14 +125,12 @@ io.on("connection", (socket) => {
     const systemMessage = {
       senderName: "Système",
       characterName: "Système",
-      message: message.content, // <- remets dans `message` pour compatibilité
+      message: message.content,
       tableId: message.tableId,
       isSystem: true,
     };
     io.to(`table-${message.tableId}`).emit("newMessage", systemMessage);
   });
-  
-  
 
   socket.on("sendMedia", ({ tableId, mediaUrl }) => {
     io.to(`table-${tableId}`).emit("newMedia", mediaUrl);
@@ -129,7 +143,7 @@ io.on("connection", (socket) => {
   socket.on("removeMedia", ({ tableId }) => {
     io.to(`table-${tableId}`).emit("removeMedia");
   });
-  
+
   socket.on("updateHealth", ({ characterId, pointsOfLife, tableId, characterName }) => {
     io.to(`table-${tableId}`).emit("updateHealth", { characterId, pointsOfLife });
     const systemMessage = {
@@ -144,25 +158,11 @@ io.on("connection", (socket) => {
   socket.on("sendNpcToDisplay", (npc) => {
     io.to(`table-${npc.tableId}`).emit("sendNpcToDisplay", npc); 
   });
-  
+
   socket.on("disconnect", () => {
+    console.log("❌ Client déconnecté :", socket.id);
   });
 });
-
-// Routes
-app.use("/api/items", itemRoutes);
-app.use("/api/users", userRoutes);
-app.use("/api/characters", characterRoutes);
-app.use("/api/tabletop", tableTopRoutes);
-app.use("/api/chat", chatRoutes);
-app.use("/api", npcRoutes);
-app.use("/api/gmfiles", gmFilesRoutes);
-app.use("/api/todos", todoRoutes);
-app.use("/api/articles", articleRoutes);
-
-/* ====================================
-== Back-end (server.js ou app.js)   ==
-==================================== */
 
 
 // Simuler un utilisateur connecté pour sécuriser (à adapter avec ton système)
@@ -197,10 +197,7 @@ app.get("/test-log", (req, res) => {
   res.send("Log envoyé.");
 });
 
-// Socket.IO connection
-io.on("connection", (socket) => {
-  console.log("Admin connecté au viewer de logs");
-});
+
 
 
 const PORT = process.env.PORT || 8080;
