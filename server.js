@@ -149,8 +149,6 @@ io.on("connection", (socket) => {
   });
 });
 
-
-
 // Routes
 app.use("/api/items", itemRoutes);
 app.use("/api/users", userRoutes);
@@ -161,6 +159,50 @@ app.use("/api", npcRoutes);
 app.use("/api/gmfiles", gmFilesRoutes);
 app.use("/api/todos", todoRoutes);
 app.use("/api/articles", articleRoutes);
+
+/* ====================================
+== Back-end (server.js ou app.js)   ==
+==================================== */
+
+
+// Simuler un utilisateur connecté pour sécuriser (à adapter avec ton système)
+const isAdmin = (req, res, next) => {
+  const isAdminHeader = req.headers["x-admin"] === "true"; // Exemple simplifié
+  if (!isAdminHeader) return res.status(403).json({ message: "Accès refusé." });
+  next();
+};
+
+// Route REST pour envoyer l'historique des logs (optionnel)
+const logs = [];
+
+app.get("/api/admin/logs", isAdmin, (req, res) => {
+  res.json({ logs });
+});
+
+// Fonction custom pour log + envoyer via websocket + stocker
+function log(message) {
+  const logMsg = `${new Date().toLocaleString()} - ${message}`;
+  logs.push(logMsg);
+  if (logs.length > 500) logs.shift(); // limite mémoire
+  console.log(logMsg);
+  io.emit("log", logMsg);
+}
+
+// Exemple d'utilisation (tu peux remplacer tous tes console.log par log(...))
+log("Serveur démarré...");
+
+// Exemple route qui log
+app.get("/test-log", (req, res) => {
+  log("Une requête test a été effectuée.");
+  res.send("Log envoyé.");
+});
+
+// Socket.IO connection
+io.on("connection", (socket) => {
+  console.log("Admin connecté au viewer de logs");
+});
+
+
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
