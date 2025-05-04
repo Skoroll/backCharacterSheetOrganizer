@@ -370,7 +370,11 @@ const updateCharacterAria = async (req, res) => {
   try {
     const characterId = req.params.id;
 
-    // Parsing des champs
+    const character = await Character.findById(characterId);
+    if (!character) {
+      return res.status(404).json({ message: "Personnage non trouvé" });
+    }
+
     const updatedBaseSkills = Array.isArray(req.body.baseSkills)
       ? req.body.baseSkills.map((skill) => ({
           ...skill,
@@ -385,15 +389,11 @@ const updateCharacterAria = async (req, res) => {
     const tableIds = tryParse(req.body.tableIds);
 
     // Correction de la magie
-
     if (magic?.ariaMagic) {
       magic.ariaMagicLevel = magic.ariaMagicLevel ?? 1;
-
-      // ✅ NE PAS toucher ariaMagicCards si déjà présent (même vide)
       if (!("ariaMagicCards" in magic)) {
         magic.ariaMagicCards = shuffleDeck();
       }
-
       if (!("ariaMagicUsedCards" in magic)) {
         magic.ariaMagicUsedCards = [];
       }
@@ -416,7 +416,23 @@ const updateCharacterAria = async (req, res) => {
 
     let uploadedImageUrl = req.body.image;
 
+    // ✅ Si une nouvelle image est uploadée
     if (req.file) {
+
+      // ✅ Supprimer l'ancienne image de Cloudinary si elle existe
+      if (character.image) {
+        try {
+          const segments = character.image.split("/");
+          const filename = segments[segments.length - 1];
+          const publicId = `characterPictures/${filename.substring(0, filename.lastIndexOf("."))}`;
+
+          await cloudinary.uploader.destroy(publicId);
+        } catch (err) {
+          console.warn("Impossible de supprimer l'ancienne image :", err);
+        }
+      }
+
+      // ✅ Uploader la nouvelle image
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "characterPictures",
         width: 260,
@@ -439,7 +455,6 @@ const updateCharacterAria = async (req, res) => {
       magic,
     };
 
-    // 🔁 Remplace le document avec les nouvelles données
     const updatedCharacter = await Character.findByIdAndUpdate(
       characterId,
       updatedFields,
@@ -456,6 +471,7 @@ const updateCharacterAria = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
 
 const drawAriaCard = async (req, res) => {
   const character = await Character.findById(req.params.id);
