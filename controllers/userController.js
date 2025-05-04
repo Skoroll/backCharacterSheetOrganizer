@@ -41,7 +41,7 @@ exports.refreshToken = async (req, res) => {
       return res.status(404).json({ message: "Utilisateur non trouvé" });
     }
 
-    const newAccessToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "1d" });
+    const newAccessToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: "1d" });
     const newRefreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: "7d" });
 
     res.json({ accessToken: newAccessToken, newRefreshToken });
@@ -113,7 +113,7 @@ exports.login = async (req, res) => {
       message: 'Connexion réussie',
       accessToken,
       refreshToken,
-      user: { id: user._id, name: user.name, email: user.email },
+      user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin },
     });
 
   } catch (err) {

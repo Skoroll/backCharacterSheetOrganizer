@@ -6,6 +6,7 @@ const http = require("http");
 const cors = require("cors");
 const path = require("path");
 const compression = require("compression");
+const todoRoutes = require("./routes/toDoRoutes");
 
 
 const itemRoutes = require("./routes/itemRoutes")
@@ -157,6 +158,7 @@ app.use("/api/tabletop", tableTopRoutes);
 app.use("/api/chat", chatRoutes);
 app.use("/api", npcRoutes);
 app.use("/api/gmfiles", gmFilesRoutes);
+app.use("/api/todos", todoRoutes);
 
 const PORT = process.env.PORT || 8080;
 server.listen(PORT, "0.0.0.0", () => {
