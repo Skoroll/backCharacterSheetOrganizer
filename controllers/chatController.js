@@ -19,10 +19,9 @@ const postMessage = async (req, res) => {
   let { message, characterName, senderName, tableId } = req.body;
 
   try {
-    // ⚠️ Nettoyage des espaces et normalisation avant stockage
+    // ⚡ Nettoyage du message
     message = message.trim().replace(/\s+/g, " ");
 
-    // Créer un nouveau message
     const newMessage = new Message({
       message,
       characterName,
@@ -30,14 +29,20 @@ const postMessage = async (req, res) => {
       tableId,
     });
 
-    // Sauvegarder le message
     await newMessage.save();
+  
+    // 📢 Log détaillé
+    const io = req.app.get("io");
+    const logMessage = `[Message envoyé] Table: ${tableId} | Expéditeur: ${senderName} (${characterName}) | Message: ${message}`;
+    io.emit("log", logMessage); // Emit au log viewer (optionnel)
+    console.log(logMessage); // Console backend
 
     res.status(201).json(newMessage);
   } catch (err) {
     res.status(500).json({ message: "Erreur lors de l'envoi du message", error: err });
   }
 };
+
   
 exports.updateHealth = async (req, res) => {
   try {
