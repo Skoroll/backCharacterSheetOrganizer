@@ -90,7 +90,9 @@ exports.login = async (req, res) => {
   }
 
   try {
-    const user = await User.findOne({ name });
+    const user = await User.findOne({ name }).select("name email isAdmin isPremium selectedCharacterName password");
+    console.log("user trouvé :", user);
+
     if (!user) {
       return res.status(401).json({ message: "Nom ou mot de passe incorrect." });
     }
@@ -103,18 +105,33 @@ exports.login = async (req, res) => {
 
     console.log("Utilisateur authentifié :", user);
 
-    const accessToken = jwt.sign({ id: user._id, isAdmin: user.isAdmin }, process.env.JWT_SECRET, { expiresIn: '1d' });
+    const accessToken = jwt.sign(
+      { id: user._id, isAdmin: user.isAdmin, isPremium: user.isPremium },
+      process.env.JWT_SECRET,
+      { expiresIn: '3h' }
+    );
+    
     const refreshToken = jwt.sign({ id: user._id }, process.env.JWT_SECRET, { expiresIn: '7d' });
 
-    user.refreshToken = refreshToken; 
-    await user.save();
+user.refreshToken = refreshToken; 
+await user.save();
 
-    res.status(200).json({
-      message: 'Connexion réussie',
-      accessToken,
-      refreshToken,
-      user: { id: user._id, name: user.name, email: user.email, isAdmin: user.isAdmin },
-    });
+const freshUser = await User.findById(user._id).select("name email isAdmin isPremium selectedCharacterName");
+
+res.status(200).json({
+  message: 'Connexion réussie',
+  accessToken,
+  refreshToken,
+  user: { 
+    id: freshUser._id, 
+    name: freshUser.name, 
+    email: freshUser.email, 
+    isAdmin: freshUser.isAdmin, 
+    isPremium: freshUser.isPremium,
+    selectedCharacterName: freshUser.selectedCharacterName
+  },
+});
+
 
   } catch (err) {
     console.error("Erreur lors de la connexion :", err);
@@ -142,7 +159,7 @@ exports.getPlayersByIds = async (req, res) => {
 };
 
 // Fonction pour récupérer les informations de l'utilisateur connecté
-exports.getProfile = async (req, res) => {
+exports.getOwnProfile = async (req, res) => {
   try {
     const user = await User.findById(req.user.id).select('-password');
     if (!user) {
@@ -317,7 +334,6 @@ exports.forgotPassword = async (req, res) => {
   }
 };
 
-
 //Vérifier la validité du token**
 exports.verifyResetToken = async (req, res) => {
   try {
@@ -353,7 +369,6 @@ exports.resetPasswordRequest = async (req, res) => {
     res.status(400).json({ message: "Token invalide ou expiré." });
   }
 };
-
 
 // Déconnexion (suppression du refresh token)
 exports.logout = async (req, res) => {

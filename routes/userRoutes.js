@@ -6,7 +6,6 @@ const uploadMiddleware = require('../middlewares/uploadMiddleware');
 
 router.post('/register', userController.register);
 router.post('/login', userController.login);
-router.get('/profile', authMiddleware.protect, userController.getProfile);
 router.put('/profile', authMiddleware.protect, uploadMiddleware.single('profileImage'), userController.updateUser);
 router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 router.get('/users/:id', userController.getUserById);
@@ -26,5 +25,9 @@ router.patch("/removeTable/:tableId", authMiddleware.protect, userController.rem
 
 // Route pour recevoir le webhook Ko-fi
 router.post('/webhook', userController.handleKofiWebhook);
+
+//Route pour autoriser l'utilisateur à se connecter
+router.get('/me', authMiddleware.protect, userController.getOwnProfile);
+
 
 module.exports = router;
