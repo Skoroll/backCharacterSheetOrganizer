@@ -16,10 +16,10 @@ const getMessages = async (req, res) => {
 
 // Envoyer un nouveau message à une table spécifique
 const postMessage = async (req, res) => {
-  let { message, characterName, senderName, tableId } = req.body;
+  let { message, characterName, senderName, tableId, isPremium } = req.body;
 
   try {
-    // ⚡ Nettoyage du message
+    // Nettoyage du message
     message = message.trim().replace(/\s+/g, " ");
 
     const newMessage = new Message({
@@ -27,22 +27,24 @@ const postMessage = async (req, res) => {
       characterName,
       senderName,
       tableId,
+      isPremium: !!isPremium, // ← Ajout ici (cast en booléen)
     });
 
     await newMessage.save();
-  
-    // 📢 Log détaillé
+
+    // Log détaillé
     const io = req.app.get("io");
-    const logMessage = `[Message envoyé] Table: ${tableId} | Expéditeur: ${senderName} (${characterName}) | Message: ${message}`;
-    io.emit("log", logMessage); // Emit au log viewer (optionnel)
-    console.log(logMessage); // Console backend
+    const logMessage = `[Message envoyé] Table: ${tableId} | Expéditeur: ${senderName} (${characterName}) | Premium: ${!!isPremium} | Message: ${message}`;
+    io.emit("log", logMessage);
+    console.log(logMessage);
 
     res.status(201).json(newMessage);
   } catch (err) {
-    res.status(500).json({ message: "Erreur lors de l'envoi du message", error: err });
+    res
+      .status(500)
+      .json({ message: "Erreur lors de l'envoi du message", error: err });
   }
 };
-
   
 exports.updateHealth = async (req, res) => {
   try {
@@ -57,14 +59,14 @@ exports.updateHealth = async (req, res) => {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
 
-    // 📢 Notifier tous les joueurs via WebSocket
+    // Notifier tous les joueurs via WebSocket
     const io = req.app.get("io");
     io.to(`table-${character.tableId}`).emit("updateHealth", {
       characterId: character._id,
       pointsOfLife: character.pointsOfLife
     });
 
-    // 📝 Enregistrer l'événement dans le chat
+    // Enregistrer l'événement dans le chat
     const systemMessage = new Message({
       message: `${character.name} change ses points de vie en : ${character.pointsOfLife}`,
       characterName: "Système",
@@ -74,7 +76,7 @@ exports.updateHealth = async (req, res) => {
 
     await systemMessage.save(); // Sauvegarde en base
 
-    // 📢 Envoyer aussi via WebSocket aux autres joueurs
+    // Envoyer aussi via WebSocket aux autres joueurs
     io.to(`table-${character.tableId}`).emit("newMessage", systemMessage);
 
     res.json(character);

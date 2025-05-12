@@ -217,11 +217,12 @@ const updateGold = async (req, res) => {
 //Controller pour Aria
 /////////////////////////////////////////////////////////////////////////////////////////
 
-// 📌 Créer un personnage avec image
+// Créer un personnage avec image
 const createCharacterAria = async (req, res) => {
   try {
     const {
       game,
+      selectedFrame,
       name,
       age,
       className,
@@ -329,6 +330,7 @@ const createCharacterAria = async (req, res) => {
 
     const newCharacter = new Character({
       game,
+      selectedFrame,
       name,
       age,
       className,
@@ -416,10 +418,10 @@ const updateCharacterAria = async (req, res) => {
 
     let uploadedImageUrl = req.body.image;
 
-    // ✅ Si une nouvelle image est uploadée
+    //  Si une nouvelle image est uploadée
     if (req.file) {
 
-      // ✅ Supprimer l'ancienne image de Cloudinary si elle existe
+      //  Supprimer l'ancienne image de Cloudinary si elle existe
       if (character.image) {
         try {
           const segments = character.image.split("/");
@@ -432,7 +434,7 @@ const updateCharacterAria = async (req, res) => {
         }
       }
 
-      // ✅ Uploader la nouvelle image
+      // Uploader la nouvelle image
       const result = await cloudinary.uploader.upload(req.file.path, {
         folder: "characterPictures",
         width: 260,
@@ -453,6 +455,7 @@ const updateCharacterAria = async (req, res) => {
       weapons,
       tableIds,
       magic,
+      selectedFrame: req.body.selectedFrame,
     };
 
     const updatedCharacter = await Character.findByIdAndUpdate(
