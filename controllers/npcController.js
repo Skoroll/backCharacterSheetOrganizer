@@ -78,7 +78,7 @@ exports.createNpc = async (req, res) => {
 };
 
 
-// 📌 Récupérer les PNJs d'une table
+// Récupérer les PNJs d'une table
 exports.getNpcsByTable = async (req, res) => {
   try {
     const { tableId } = req.params;
@@ -105,7 +105,7 @@ exports.deleteNpc = async (req, res) => {
       return res.status(404).json({ message: "PNJ non trouvé" });
     }
 
-    // 🔥 Suppression de l'image Cloudinary si elle existe
+    // Suppression de l'image Cloudinary si elle existe
     if (deletedNpc.image) {
       // On extrait le public_id de l'URL (format : https://res.cloudinary.com/.../npcs/<public_id>.webp)
       const segments = deletedNpc.image.split("/");
@@ -129,15 +129,61 @@ exports.deleteNpc = async (req, res) => {
 
 //Edition de PNJ
 exports.updateNpc = async (req, res) => {
-  const { id } = req.params;
+  try {
+    const { id } = req.params;
+    const npc = await Npc.findById(id);
+    if (!npc) return res.status(404).json({ message: "PNJ non trouvé" });
 
-  const npc = await Npc.findByIdAndUpdate(id, req.body, {
-    new: true,
-    runValidators: true,
-  });
+    // Upload image si besoin
+    if (req.file) {
+      const streamUpload = () => {
+        return new Promise((resolve, reject) => {
+          const stream = cloudinary.uploader.upload_stream(
+            {
+              folder: "npcs",
+              transformation: [{ width: 180, height: 180, crop: "fill" }],
+              format: "webp",
+            },
+            (error, result) => {
+              if (result) resolve(result);
+              else reject(error);
+            }
+          );
+          streamifier.createReadStream(req.file.buffer).pipe(stream);
+        });
+      };
 
-  if (!npc) return res.status(404).json({ message: "PNJ non trouvé" });
+      const result = await streamUpload();
+      npc.image = result.secure_url;
+    }
 
-  res.status(200).json(npc);
+    // Mise à jour des champs
+    const fields = [
+      "name",
+      "age",
+      "location",
+      "strength",
+      "dexterity",
+      "intelligence",
+      "charisma",
+      "endurance",
+    ];
+    fields.forEach((field) => {
+      if (req.body[field] !== undefined) {
+        npc[field] = req.body[field];
+      }
+    });
+
+    npc.specialSkills = JSON.parse(req.body.specialSkills || "[]");
+    npc.inventory = JSON.parse(req.body.inventory || "[]");
+    npc.story = req.body.story || "";
+
+    await npc.save();
+    res.status(200).json(npc);
+  } catch (error) {
+    console.error("Erreur update NPC", error);
+    res.status(500).json({ message: "Erreur serveur", error });
+  }
 };
+
 
