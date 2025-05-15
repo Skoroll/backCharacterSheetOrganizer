@@ -376,7 +376,12 @@ const updateCharacterAria = async (req, res) => {
     if (!character) {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
-
+    if (Array.isArray(req.body.selectedFrame)) {
+  req.body.selectedFrame = req.body.selectedFrame[0]; // garde la première
+}
+if (req.body.selectedFrame === "" || req.body.selectedFrame === "null") {
+  req.body.selectedFrame = null;
+}
     const updatedBaseSkills = Array.isArray(req.body.baseSkills)
       ? req.body.baseSkills.map((skill) => ({
           ...skill,
@@ -457,6 +462,8 @@ const updateCharacterAria = async (req, res) => {
       magic,
       selectedFrame: req.body.selectedFrame,
     };
+
+
 
     const updatedCharacter = await Character.findByIdAndUpdate(
       characterId,

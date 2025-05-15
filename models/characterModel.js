@@ -22,7 +22,7 @@ const magicSchema = new mongoose.Schema({
 
 // Schema du personnages
 const characterSchema = new mongoose.Schema({
-  selectedFrame: {type: String, default : ""},
+  selectedFrame: {type: String, default : null },
   game: { type: String, required: true },
   name: { type: String, required: true },
   className: { type: String, required: true },
