@@ -8,7 +8,7 @@ const path = require("path");
 const compression = require("compression");
 const todoRoutes = require("./routes/toDoRoutes");
 const articleRoutes = require("./routes/articleRoutes");
-
+const stripeRoutes = require("./routes/stripeRoutes");
 
 const itemRoutes = require("./routes/itemRoutes")
 const userRoutes = require("./routes/userRoutes");
@@ -88,7 +88,10 @@ app.use("/gmAssets", express.static("gmAssets"));
 
 app.set("io", io);
 
-
+app.use(
+  "/api/stripe/webhook",
+  express.raw({ type: "application/json" })
+);
 
 // Routes
 app.use("/api/items", itemRoutes);
@@ -100,6 +103,7 @@ app.use("/api", npcRoutes);
 app.use("/api/gmfiles", gmFilesRoutes);
 app.use("/api/todos", todoRoutes);
 app.use("/api/articles", articleRoutes);
+app.use("/api/stripe", stripeRoutes); 
 
 io.on("connection", (socket) => {
   console.log("✅ Nouveau client connecté :", socket.id);

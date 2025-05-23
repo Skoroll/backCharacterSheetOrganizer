@@ -1,5 +1,6 @@
 const express = require('express');
 const multer = require("multer");
+const checkCharacterLimit = require('../middlewares/checkCharacterLimit');
 const { protect } = require('../middlewares/authMiddleware');
 
 const { 
@@ -50,7 +51,7 @@ router.get("/", (req, res, next) => {
 ////////////////////////////
 
 // Route pour créer un personnage avec upload de fichier
-router.post("/aria", protect, upload.single("image"), createCharacterAria);
+router.post("/aria", protect, checkCharacterLimit, upload.single("image"), createCharacterAria);
 
 // Route pour mettre à jour un personnage
 router.put("/aria/:id", upload.single("image"), updateCharacterAria);
