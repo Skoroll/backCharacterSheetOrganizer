@@ -9,7 +9,7 @@ const compression = require("compression");
 const todoRoutes = require("./routes/toDoRoutes");
 const articleRoutes = require("./routes/articleRoutes");
 const stripeRoutes = require("./routes/stripeRoutes");
-
+const questRoutes = require("./routes/questRoutes");
 const itemRoutes = require("./routes/itemRoutes")
 const userRoutes = require("./routes/userRoutes");
 const chatRoutes = require("./routes/chatRoutes");
@@ -104,9 +104,9 @@ app.use("/api/gmfiles", gmFilesRoutes);
 app.use("/api/todos", todoRoutes);
 app.use("/api/articles", articleRoutes);
 app.use("/api/stripe", stripeRoutes); 
+app.use("/api/quests", questRoutes);
 
 io.on("connection", (socket) => {
-  console.log("✅ Nouveau client connecté :", socket.id);
 
   // Historique des logs
   socket.on("requestLogsHistory", () => {
@@ -164,7 +164,7 @@ io.on("connection", (socket) => {
   });
 
   socket.on("disconnect", () => {
-    console.log("❌ Client déconnecté :", socket.id);
+    
   });
 });
 

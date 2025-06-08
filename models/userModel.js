@@ -9,6 +9,10 @@ const userSchema = mongoose.Schema({
   refreshToken: { type: String },
   isAdmin: { type: Boolean, required: false, default: false },
 
+  userQuest: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }],
+  addedQuest: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }],
+
+
   // Ajout pour le paywall Ko-fi
   isPremium: { type: Boolean, default: false }, // True si l'utilisateur a un abonnement Ko-fi valide
   premiumUntil: { type: Date, default: null }, // Date limite si abonnement temporaire
