@@ -28,15 +28,29 @@ const uploadToCloudinary = (buffer, filename) => {
 exports.uploadFile = async (req, res) => {
   try {
     const { tableId, title, text, textFont, textColor, isBG } = req.body;
+
     if (!tableId) {
       return res.status(400).json({ message: "ID de table requis." });
     }
 
-    const savedFiles = [];  
+    // 🔒 Limite d’upload MJ non premium
+    const MAX_FILES_NON_PREMIUM = 5;
+    const existingFiles = await GmFile.countDocuments({ user: req.user._id });
+    const incomingCount = (text ? 1 : 0) + (req.files?.length || 0);
+
+    if (!req.user.isPremium && existingFiles + incomingCount > MAX_FILES_NON_PREMIUM) {
+      return res.status(403).json({
+        message: `Limite atteinte : seuls ${MAX_FILES_NON_PREMIUM} fichiers sont autorisés pour les comptes gratuits.`,
+      });
+    }
+
+    const savedFiles = [];
+
     // ✅ Texte
     if (text) {
       const newTextFile = new GmFile({
         tableId,
+        user: req.user._id,
         type: "text",
         title: title || `Texte-${Date.now()}`,
         filename: title || `text-${Date.now()}`,
@@ -45,7 +59,6 @@ exports.uploadFile = async (req, res) => {
         isBG: isBG === "false" || isBG === false ? false : true,
         content: text,
       });
-      
 
       await newTextFile.save();
       savedFiles.push(newTextFile);
@@ -58,6 +71,7 @@ exports.uploadFile = async (req, res) => {
 
         const newImage = new GmFile({
           tableId,
+          user: req.user._id,
           type: "image",
           title: title || file.originalname,
           filename: file.originalname,

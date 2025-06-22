@@ -15,9 +15,9 @@ const checkCharacterLimit = async (req, res, next) => {
 
     const count = await Character.countDocuments({ userId });
 
-    if (count >= 3) {
+    if (count >= 1) {
       return res.status(403).json({
-        message: "Limite de 3 personnages atteinte pour les comptes gratuits.",
+        message: "Limite de 1 personnage atteinte pour les comptes gratuits.",
       });
     }
 

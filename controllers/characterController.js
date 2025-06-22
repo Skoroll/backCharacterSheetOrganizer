@@ -16,11 +16,16 @@ const allModels = [
 // Récupérer un personnage par son ID
 const getCharacterById = async (req, res) => {
   try {
-    const character = await Character.findById(req.params.id);
+    const character = await Character.findById(req.params.id).populate('userId', 'name');
     if (!character) {
       return res.status(404).json({ message: "Personnage non trouvé" });
     }
-    res.status(200).json(character);
+    res.status(200).json({
+  ...character.toObject(),
+   ownerId: character.userId?._id,
+  ownerName: character.userId?.name || "Inconnu", 
+  
+});console.log("ownerId", character.userId)
   } catch (error) {
     res.status(500).json({ message: error.message });
   }
@@ -80,6 +85,18 @@ const deleteCharacter = async (req, res) => {
     res.status(500).json({ message: "Erreur serveur" });
   }
 };
+
+// Récupérer les personnages d'un utilisateur spécifique (non-authentifié)
+const getCharactersByUserId = async (req, res) => {
+  try {
+    const characters = await Character.find({ userId: req.params.userId });
+    res.status(200).json(characters);
+  } catch (error) {
+    console.error("Erreur getCharactersByUserId :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
+
 
 // Récupérer les personnages d'un utilisateur spécifique (authentifié)
 const getUserCharacters = async (req, res) => {
@@ -595,4 +612,5 @@ module.exports = {
   reshuffleAriaDeck,
   updateDeathMagic,
   updateGold,
+  getCharactersByUserId,
 };

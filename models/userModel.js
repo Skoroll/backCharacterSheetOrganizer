@@ -8,7 +8,17 @@ const userSchema = mongoose.Schema({
   tablesJoined: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Table' }],
   refreshToken: { type: String },
   isAdmin: { type: Boolean, required: false, default: false },
-
+selectedCharacter: {
+  type: mongoose.Schema.Types.ObjectId,
+  ref: "Character",
+  default: null,
+},
+friendList: [
+  {
+    type: mongoose.Schema.Types.ObjectId,
+    ref: "User",
+  },
+],
   userQuest: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }],
   addedQuest: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Quest' }],
 

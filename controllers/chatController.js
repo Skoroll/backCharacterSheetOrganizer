@@ -16,23 +16,22 @@ const getMessages = async (req, res) => {
 
 // Envoyer un nouveau message à une table spécifique
 const postMessage = async (req, res) => {
-  let { message, characterName, senderName, tableId, isPremium } = req.body;
+  let { message, characterName, senderName, senderId, tableId, isPremium } = req.body;
 
   try {
-    // Nettoyage du message
     message = message.trim().replace(/\s+/g, " ");
 
     const newMessage = new Message({
       message,
       characterName,
       senderName,
+      senderId,
       tableId,
-      isPremium: !!isPremium, // ← Ajout ici (cast en booléen)
+      isPremium: !!isPremium,
     });
 
     await newMessage.save();
 
-    // Log détaillé
     const io = req.app.get("io");
     const logMessage = `[Message envoyé] Table: ${tableId} | Expéditeur: ${senderName} (${characterName}) | Premium: ${!!isPremium} | Message: ${message}`;
     io.emit("log", logMessage);
@@ -40,11 +39,11 @@ const postMessage = async (req, res) => {
 
     res.status(201).json(newMessage);
   } catch (err) {
-    res
-      .status(500)
-      .json({ message: "Erreur lors de l'envoi du message", error: err });
+    console.error("Erreur lors de l'envoi du message :", err);
+    res.status(500).json({ message: "Erreur lors de l'envoi du message", error: err });
   }
 };
+
   
 exports.updateHealth = async (req, res) => {
   try {

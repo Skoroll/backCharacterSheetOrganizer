@@ -5,6 +5,9 @@ const uploadMiddleware = require('../middlewares/uploadMiddleware');  // Assure-
 const fs = require('fs');
 const path = require('path');
 const nodemailer = require("nodemailer");
+const mongoose = require("mongoose")
+const Character = require('../models/characterModel');
+
 
 const SECRET = process.env.JWT_SECRET || "secret"; 
 const FRONT_URL = process.env.FRONT_URL || "http://localhost:5173";
@@ -174,6 +177,39 @@ exports.getProfile = async (req, res) => {
     res.status(500).json({ message: 'Erreur serveur' });
   }
 };
+
+exports.getUserProfileById = async (req, res) => {
+  try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: "ID invalide" });
+    }
+
+    const user = await User.findById(req.params.id).select("-password -email");
+    if (!user) return res.status(404).json({ message: "Utilisateur non trouvé" });
+
+    const characters = await Character.find({ userId: user._id });
+
+    const featuredCharacter = characters.find(c => c._id.toString() === user.selectedCharacter);
+
+    const charactersWithImage = characters.filter(c => c.image);
+    const randomCharacterImage = featuredCharacter
+      ? null
+      : charactersWithImage.length > 0
+      ? charactersWithImage[Math.floor(Math.random() * charactersWithImage.length)].image
+      : null;
+
+    res.json({
+      user,
+      characters,
+      featuredCharacter,
+      randomCharacterImage,
+    });
+  } catch (error) {
+    console.error("❌ Erreur dans getUserProfileById :", error);
+    res.status(500).json({ message: "Erreur serveur", error: error.message });
+  }
+};
+
 
 
 // Fonction pour la modification du profil

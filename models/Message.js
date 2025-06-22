@@ -7,6 +7,7 @@ const messageSchema = new mongoose.Schema({
   tableId: { type: String, required: true }, // Ajouter tableId pour associer les messages à une table
   isPremium: Boolean,
   createdAt: { type: Date, default: Date.now, expires: '2d' }, // Expiration automatique après 2 jours
+  senderId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: false },
 });
 
 const Message = mongoose.model("Message", messageSchema);

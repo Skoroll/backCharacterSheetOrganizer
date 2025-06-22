@@ -7,10 +7,13 @@ const uploadMiddleware = require('../middlewares/uploadMiddleware');
 router.post('/register', userController.register);
 router.post('/login', userController.login);
 router.get('/profile', authMiddleware.protect, userController.getProfile);
+router.get('/profile/:id', userController.getUserProfileById);
 router.put('/profile', authMiddleware.protect, uploadMiddleware.single('profileImage'), userController.updateUser);
 router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 router.get('/users/:id', userController.getUserById);
 router.get('/players', userController.getPlayersByIds);
+
+
 
 // Récupération de mot de passe
 router.post("/forgot-password", userController.forgotPassword);

@@ -15,6 +15,7 @@ const {
   drawAriaCard,
   updateDeathMagic,
   updateGold,
+  getCharactersByUserId,
 } = require('../controllers/characterController');
 
 
@@ -68,7 +69,7 @@ router.patch("/:id/update-death-magic", updateDeathMagic);
 
 // Route pour récupérer un personnage par son ID
 router.get("/:id", getCharacterById);
-
+router.get("/by-user/:userId", getCharactersByUserId);
 router.get("/characters", protect, getCharactersByUser);
 
 //Modifie la vie à la volée
