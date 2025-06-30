@@ -7,6 +7,7 @@ const path = require('path');
 const nodemailer = require("nodemailer");
 const mongoose = require("mongoose")
 const Character = require('../models/characterModel');
+const Table = require("../models/tabletopModel")
 
 
 const SECRET = process.env.JWT_SECRET || "secret"; 
@@ -210,6 +211,22 @@ exports.getUserProfileById = async (req, res) => {
   }
 };
 
+exports.getUserTablesDetailed = async (req, res) => {
+  try {
+    const userId = req.params.id;
+    const tables = await Table.find({
+      $or: [
+        { "players.userId": userId },
+        { gameMaster: userId }
+      ]
+    }).select("name bannerImage gameMaster gameMasterName players game selectedFont bannerStyle borderColor borderWidth");
+
+    res.json(tables);
+  } catch (error) {
+    console.error("❌ Erreur getUserTablesDetailed :", error);
+    res.status(500).json({ message: "Erreur serveur" });
+  }
+};
 
 
 // Fonction pour la modification du profil

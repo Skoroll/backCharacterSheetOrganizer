@@ -12,8 +12,7 @@ router.put('/profile', authMiddleware.protect, uploadMiddleware.single('profileI
 router.delete('/profile', authMiddleware.protect, userController.deleteUser);
 router.get('/users/:id', userController.getUserById);
 router.get('/players', userController.getPlayersByIds);
-
-
+router.get('/users/:id/tables-detailed', userController.getUserTablesDetailed);
 
 // Récupération de mot de passe
 router.post("/forgot-password", userController.forgotPassword);

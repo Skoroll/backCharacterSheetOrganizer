@@ -33,7 +33,7 @@ const characterSchema = new mongoose.Schema({
   intelligence: { type: Number, required: true },
   charisma: { type: Number, required: true },
   pointsOfLife: { type: Number, required: true },
-  maxHP: { type: Number, required: true },
+  maxHP: { type: Number, required: false },
   gold: { type: Number, required: true },
   injuries: { type: String, required: true },
   protection: { type: String, required: true },
